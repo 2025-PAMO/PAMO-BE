@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
 public class ChatController {
-
+ 
     private final ChatService chatService;
 
     @Operation(summary = "GPT 응답 가져오기", description = "질문을 보내면 GPT의 응답과 상태를 반환합니다.")
