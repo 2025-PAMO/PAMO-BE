@@ -37,3 +37,20 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+logs/
+!logs/.keep
+
+# === Env / Properties / Secrets ===
+.env
+.env.*
+*.local
+application-local.yml
+application-*.yml
+application-*.properties
