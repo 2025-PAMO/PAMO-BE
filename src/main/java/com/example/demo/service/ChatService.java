@@ -3,9 +3,9 @@ package com.example.demo.service;
 import com.example.demo.converter.ChatConverter;
 import com.example.demo.domain.ChatStatus;
 import com.example.demo.domain.Message;
-import com.example.demo.dto.ChatAnswerResponseDto;
-import com.example.demo.dto.GPTRequestDto;
-import com.example.demo.dto.GPTResponseDto;
+import com.example.demo.dto.chat.ChatAnswerResponseDTO;
+import com.example.demo.dto.chat.GPTRequestDTO;
+import com.example.demo.dto.chat.GPTResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class ChatService {
     // 로컬 채팅 로그 (DB 대신 사용)
     private final Map<Integer, List<Message>> userMessageLog = new HashMap<>();
 
-    public ChatAnswerResponseDto askGPT(Integer userId, String prompt, String jwtToken) {
+    public ChatAnswerResponseDTO askGPT(Integer userId, String prompt, String jwtToken) {
         List<Message> chatLog = userMessageLog.computeIfAbsent(userId, id -> new ArrayList<>());
         chatLog.add(new Message("user", prompt));
 
@@ -58,8 +58,8 @@ public class ChatService {
             messages.add(new Message("user", processedPrompt));
         }
 
-        GPTRequestDto request = new GPTRequestDto(model, messages);
-        GPTResponseDto response = template.postForObject(apiURL, request, GPTResponseDto.class);
+        GPTRequestDTO request = new GPTRequestDTO(model, messages);
+        GPTResponseDTO response = template.postForObject(apiURL, request, GPTResponseDTO.class);
 
         String answer = response.getChoices().get(0).getMessage().getContent();
         chatLog.add(new Message("assistant", answer));

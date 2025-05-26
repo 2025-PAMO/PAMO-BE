@@ -1,8 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.apiPayload.CustomResponse;
-import com.example.demo.dto.ChatAnswerResponseDto;
-import com.example.demo.dto.ChatRequestDto;
+import com.example.demo.dto.chat.ChatAnswerResponseDTO;
+import com.example.demo.dto.chat.ChatRequestDTO;
 import com.example.demo.service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
 public class ChatController {
-
+ 
     private final ChatService chatService;
 
     @Operation(summary = "GPT 응답 가져오기", description = "질문을 보내면 GPT의 응답과 상태를 반환합니다.")
     @PostMapping("/ask")
-    public CustomResponse<ChatAnswerResponseDto> askQuestion(
-            @RequestBody ChatRequestDto request,
+    public CustomResponse<ChatAnswerResponseDTO> askQuestion(
+            @RequestBody ChatRequestDTO request,
             @RequestHeader("Authorization") String jwtToken) {
 
-        ChatAnswerResponseDto responseDto = chatService.askGPT(
+        ChatAnswerResponseDTO responseDto = chatService.askGPT(
                 request.getUserId(),
                 request.getQuestion(),
                 jwtToken

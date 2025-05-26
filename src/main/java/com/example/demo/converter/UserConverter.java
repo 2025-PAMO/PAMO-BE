@@ -1,7 +1,7 @@
 package com.example.demo.converter;
 
 import com.example.demo.domain.User;
-import com.example.demo.dto.UserDto;
+import com.example.demo.dto.user.UserDto;
 
 public class UserConverter {
     public static UserDto toDto(User entity) {

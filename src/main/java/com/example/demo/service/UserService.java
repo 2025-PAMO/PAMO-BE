@@ -2,10 +2,10 @@ package com.example.demo.service;
 
 import com.example.demo.converter.UserConverter;
 import com.example.demo.domain.User;
-import com.example.demo.dto.UserDto;
+import com.example.demo.dto.user.UserDto;
 import com.example.demo.exception.code.UserErrorCode;
 import com.example.demo.exception.handler.UserException;
-import com.example.demo.persistence.UserRepository;
+import com.example.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 @Service

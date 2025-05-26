@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.UserDto;
+import com.example.demo.dto.user.UserDto;
 import com.example.demo.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
