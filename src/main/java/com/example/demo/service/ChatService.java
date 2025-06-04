@@ -8,6 +8,7 @@ import com.example.demo.dto.chat.ChatAnswerResponseDTO;
 import com.example.demo.dto.chat.GPTRequestDTO;
 import com.example.demo.dto.chat.GPTResponseDTO;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.util.SimilarityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -79,9 +80,11 @@ public class ChatService {
 
     private String buildSystemPrompt(ChatStatus status) {
         if (status == ChatStatus.SUMMARY) {
-            return "지금까지의 대화를 바탕으로 사용자가 원하는 음악의 특징을 요약해주세요. 다음 형식을 반드시 따르세요: 장르: (예: 락, 팝, 재즈 등), 분위기: (예: 신나는, 잔잔한 등), 장소/상황: (예: 운동할 때, 카페에서 등), 빠르기: (예: 빠름, 중간, 느림), 함께 들을 사람: (예: 친구, 연인 등). 5개 중 최소 3개 이상의 항목을 포함하세요. 대답은 위 형식을 그대로 사용하고, 설명이나 말투를 덧붙이지 마세요.";
-        }
-        else {
+            return "지금까지의 대화를 바탕으로 사용자가 원하는 음악의 특징을 요약해주세요. 다음 형식을 반드시 따르세요: " +
+                    "장르: (예: 락, 팝, 재즈 등), 분위기: (예: 신나는, 잔잔한 등), 장소/상황: (예: 운동할 때, 카페에서 등), " +
+                    "빠르기: (예: 빠름, 중간, 느림), 함께 들을 사람: (예: 친구, 연인 등). " +
+                    "5개 중 최소 3개 이상의 항목을 포함하세요. 대답은 위 형식을 그대로 사용하고, 설명이나 말투를 덧붙이지 마세요.";
+        } else {
             return
                     "당신은 사용자가 만들고자 하는 음악을 구체화하는 데 도움을 주는 AI입니다. " +
                             "목표는 사용자와의 대화를 통해 음악 생성에 필요한 요소(장르, 분위기, 빠르기, 장소, 함께 들을 사람 등)를 하나씩 수집하는 것입니다. " +
@@ -98,16 +101,39 @@ public class ChatService {
                             "5. 사용자가 '그만', '끝', '종료'라고 해도, 요약이 아직 안 됐다면 먼저 요약을 유도하세요. " +
 
                             "6. 대화가 충분히 구체화되었다고 판단되면, 사용자가 대화를 종료하거나 요약을 요청할 수 있도록 유도하세요. " +
-                            "예: '이제 어느 정도 방향이 정해진 것 같아요. 요약해드릴까요?' 또는 '이 정도면 음악을 만들 준비가 된 것 같아요. 마무리해볼까요?' " +
+                            "반드시 '요약', '정리', '마무리', '끝' 같은 단어를 포함한 문장을 사용하세요. 예: " +
+                            "'이제 어느 정도 정리된 것 같아요. 요약해드릴까요?', '이 정도면 음악을 만들 준비가 된 것 같아요. 요약해볼까요?' " +
+
+                            "또는 '마무리하고 싶으시면 요약해줘라고 말씀해주세요.'와 같이 유도하세요. " +
 
                             "항상 짧고 간결하게, 친절한 어조로 응답하고 대화를 이어가며 필요한 정보를 하나씩 얻어내는 데 집중하세요.";
         }
     }
 
+
     private ChatStatus determineStatus(String prompt) {
-        String lower = prompt.toLowerCase();
-        if (lower.contains("요약") || lower.contains("정리")) return ChatStatus.SUMMARY;
-        if (lower.contains("끝") || lower.contains("종료") || lower.contains("그만")) return ChatStatus.END;
+        String lowerPrompt = prompt.toLowerCase();
+        double threshold = 0.6;
+
+        List<String> summaryPhrases = List.of("요약", "정리해줘", "요약 좀", "이제 요약", "정리해볼까");
+        List<String> endPhrases = List.of("그만", "종료", "끝내자", "마무리할래", "마무리할게", "마무리하고싶어", "이제 끝", "끝낼래");
+
+        for (String keyword : summaryPhrases) {
+            double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
+            System.out.println("[유사도 로그] summary: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
+            if (score > threshold || lowerPrompt.contains("요약") || lowerPrompt.contains("정리")) {
+                return ChatStatus.SUMMARY;
+            }
+        }
+
+        for (String keyword : endPhrases) {
+            double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
+            System.out.println("[유사도 로그] end: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
+            if (score > threshold || lowerPrompt.contains("마무리") || lowerPrompt.contains("끝내") || lowerPrompt.contains("종료")) {
+                return ChatStatus.END;
+            }
+        }
+
         return ChatStatus.CHAT;
     }
 
