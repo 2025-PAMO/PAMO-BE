@@ -6,7 +6,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -15,28 +15,22 @@ public class CorsConfig {
     public static CorsConfigurationSource apiConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        ArrayList<String> allowedOriginPatterns = new ArrayList<>();
-        allowedOriginPatterns.add("http://localhost:8080");
+        // Origin 직접 명시
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:8080",
+                "http://localhost:5173"
+        ));
 
-        configuration.setAllowedOrigins(allowedOriginPatterns); // 허용할 Origin 설정
+        // 또는 와일드카드 패턴으로 좀 더 유연하게 허용하고 싶다면 아래 한 줄로 대체
+        // configuration.setAllowedOriginPatterns(Collections.singletonList("http://localhost:*"));
 
-        // 허용할 HTTP 메서드
-        ArrayList<String> allowedHttpMethods = new ArrayList<>();
-        allowedHttpMethods.add("GET");
-        allowedHttpMethods.add("POST");
-        allowedHttpMethods.add("PUT");
-        allowedHttpMethods.add("DELETE");
-        allowedHttpMethods.add("PATCH");
-        allowedHttpMethods.add("OPTIONS"); // Preflight 요청을 위해 OPTIONS 추가
-        configuration.setAllowedMethods(allowedHttpMethods);
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+        ));
 
-        // 모든 요청 헤더 허용
         configuration.setAllowedHeaders(Collections.singletonList("*"));
-
-        // 인증 정보(쿠키, 헤더)를 포함한 요청 허용
         configuration.setAllowCredentials(true);
 
-        // CORS 설정 적용 경로
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
