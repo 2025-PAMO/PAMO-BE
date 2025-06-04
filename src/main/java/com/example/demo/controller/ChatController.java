@@ -18,13 +18,11 @@ public class ChatController {
     @Operation(summary = "GPT 응답 가져오기", description = "질문을 보내면 GPT의 응답과 상태를 반환합니다.")
     @PostMapping("/ask")
     public CustomResponse<ChatAnswerResponseDTO> askQuestion(
-            @RequestBody ChatRequestDTO request,
-            @RequestHeader("Authorization") String jwtToken) {
+            @RequestBody ChatRequestDTO request) {
 
         ChatAnswerResponseDTO responseDto = chatService.askGPT(
                 request.getUserId(),
-                request.getQuestion(),
-                jwtToken
+                request.getQuestion()
         );
         return CustomResponse.onSuccess(responseDto);
     }
