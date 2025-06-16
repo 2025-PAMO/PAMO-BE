@@ -113,23 +113,22 @@ public class ChatService {
 
     private ChatStatus determineStatus(String prompt) {
         String lowerPrompt = prompt.toLowerCase();
-        double threshold = 0.6;
 
-        List<String> summaryPhrases = List.of("요약", "정리해줘", "요약 좀", "이제 요약", "정리해볼까");
-        List<String> endPhrases = List.of("그만", "종료", "끝내자", "마무리할래", "마무리할게", "마무리하고싶어", "이제 끝", "끝낼래");
+        List<String> summaryPhrases = List.of("요약", "정리해줘", "요약 좀", "이제 요약", "정리해볼까", "정리");
+        List<String> endPhrases = List.of("그만", "종료", "끝내자", "마무리할래", "마무리할게", "마무리하고싶어", "이제 끝", "끝낼래", "끝");
 
         for (String keyword : summaryPhrases) {
-            double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
-            System.out.println("[유사도 로그] summary: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
-            if (score > threshold || lowerPrompt.contains("요약") || lowerPrompt.contains("정리")) {
+            // double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
+            // System.out.println("[유사도 로그] summary: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
+            if (lowerPrompt.contains(keyword)) {
                 return ChatStatus.SUMMARY;
             }
         }
 
         for (String keyword : endPhrases) {
-            double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
-            System.out.println("[유사도 로그] end: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
-            if (score > threshold || lowerPrompt.contains("마무리") || lowerPrompt.contains("끝내") || lowerPrompt.contains("종료")) {
+            // double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
+            // System.out.println("[유사도 로그] end: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
+            if (lowerPrompt.contains(keyword)) {
                 return ChatStatus.END;
             }
         }
