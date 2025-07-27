@@ -1,6 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.domain.MotionMusic;
+import com.example.demo.domain.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,5 +26,7 @@ public interface MotionMusicRepository extends JpaRepository<MotionMusic, Intege
         ORDER BY COUNT(l) DESC
     """)
     List<MotionMusic> findMostLikedVisibleMotionMusic(Pageable pageable);
+
+    List<MotionMusic> findByUser(User user);
 
 }
