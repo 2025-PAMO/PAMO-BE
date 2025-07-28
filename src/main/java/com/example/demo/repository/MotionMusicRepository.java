@@ -29,4 +29,5 @@ public interface MotionMusicRepository extends JpaRepository<MotionMusic, Intege
 
     List<MotionMusic> findByUser(User user);
 
+    List<MotionMusic> findByBaseMusicId(Integer baseMusicId);
 }

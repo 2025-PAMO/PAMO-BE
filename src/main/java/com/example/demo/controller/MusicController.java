@@ -1,54 +1,95 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.summary.MusicGenerateRequest;
+import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MusicSummary;
+import com.example.demo.dto.music.MusicRegenerateRequest;
+import com.example.demo.dto.music.MusicRegenerateResponse;
+import com.example.demo.dto.music.MotionMusicRegenerateResponse;
 import com.example.demo.repository.BaseMusicRepository;
 import com.example.demo.repository.MusicSummaryRepository;
+import com.example.demo.service.MusicService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/music")
+@RequiredArgsConstructor
 public class MusicController {
 
     private final BaseMusicRepository baseMusicRepo;
     private final MusicSummaryRepository summaryRepo;
+    private final MusicService musicService;
 
-    public MusicController(BaseMusicRepository baseMusicRepo, MusicSummaryRepository summaryRepo) {
-        this.baseMusicRepo = baseMusicRepo;
-        this.summaryRepo = summaryRepo;
-    }
+    /**
+     * 프롬프트 + 허밍으로 기본 음악 생성
+     */
+    @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CustomResponse<Map<String, Object>>> generateMusic(
+            @RequestParam("sessionId") String sessionId,
+            @RequestParam("userId") Integer userId,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam("prompt") String prompt,
+            @RequestPart("file") MultipartFile file) throws IOException {
 
-    @PostMapping("/generate")
-    public ResponseEntity<?> generateMusic(@RequestBody MusicGenerateRequest request) {
-        String sessionId = request.getSessionId();
-        Integer userId = request.getUserId();
-        String title = request.getTitle();
-        String fileUrl = request.getFileUrl();
+        String finalTitle = (title == null || title.isBlank())
+                ? "나의 노래" + (baseMusicRepo.countByUserId(userId) + 1)
+                : title;
 
-        // 1. GPT 요약 조회
+        String fileUrl = musicService.generateMusicAndUpload(prompt, file);
+
         MusicSummary summary = summaryRepo.findBySessionId(sessionId)
                 .orElseThrow(() -> new RuntimeException("GPT 요약 없음"));
 
-        // 2. 기본 음악 저장
         BaseMusic music = new BaseMusic();
         music.setSessionId(sessionId);
         music.setUserId(userId);
-        music.setTitle(title);
+        music.setTitle(finalTitle);
         music.setFileUrl(fileUrl);
-
         baseMusicRepo.save(music);
 
-        // 3. 응답 구성
         Map<String, Object> response = new HashMap<>();
         response.put("musicId", music.getId());
         response.put("summary", summary.getSummaryText());
         response.put("fileUrl", music.getFileUrl());
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CustomResponse.onSuccess(response));
+    }
+
+    /**
+     * 프롬프트(GPT 요약) 기반으로 기본 음악 재생성 (파일 없음, JSON 방식)
+     */
+    @PostMapping(value = "/regenerate/from-summary", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CustomResponse<MusicRegenerateResponse>> regenerateFromSummary(
+            @RequestBody MusicRegenerateRequest request) {
+
+        String title = (request.getTitle() == null || request.getTitle().isBlank())
+                ? "나의 노래" + (baseMusicRepo.countByUserId(request.getUserId()) + 1)
+                : request.getTitle();
+
+        MusicRegenerateResponse response = musicService.regenerateFromPromptOnly(
+                request.getSessionId(),
+                request.getUserId(),
+                title
+        );
+        return ResponseEntity.ok(CustomResponse.onSuccess(response));
+    }
+
+    /**
+     * 기존 기본 음악 기반으로 모션 음악 재생성
+     */
+    @PostMapping("/{baseId}/motion/regenerate")
+    public ResponseEntity<CustomResponse<MotionMusicRegenerateResponse>> regenerateMotionMusic(
+            @PathVariable Integer baseId) {
+
+        MotionMusicRegenerateResponse response = musicService.regenerateMotionMusic(baseId);
+        return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 }

@@ -8,11 +8,11 @@ import lombok.NoArgsConstructor;
 import java.sql.Timestamp;
 import java.util.List;
 
+@Entity
+@Table(name = "motion_music")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "motion_music")
 public class MotionMusic {
 
     @Id
@@ -27,11 +27,8 @@ public class MotionMusic {
     private Integer userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id2", insertable = false, updatable = false)
+    @JoinColumn(name = "base_music_id", insertable = false, updatable = false)
     private BaseMusic baseMusic;
-
-    @Column(name = "id2")
-    private Integer baseMusicId;
 
     @Column(name = "session_id", length = 64)
     private String sessionId;
@@ -57,4 +54,3 @@ public class MotionMusic {
 
     private String cover;
 }
-
