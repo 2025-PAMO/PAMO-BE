@@ -6,12 +6,15 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MusicSummary;
 import com.example.demo.domain.MotionMusic;
+import com.example.demo.domain.User;
 import com.example.demo.dto.music.MotionMusicRegenerateResponse;
 import com.example.demo.dto.music.MusicRegenerateResponse;
 import com.example.demo.repository.BaseMusicRepository;
 import com.example.demo.repository.MusicSummaryRepository;
 import com.example.demo.repository.MotionMusicRepository;
+import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -29,6 +32,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MusicService {
+
+    @Autowired
+    private UserRepository userRepository;
 
     private final AmazonS3 amazonS3;
     private final RestTemplate restTemplate;
@@ -149,6 +155,9 @@ public class MusicService {
      * 프롬프트 기반으로 기본 음악 처음부터 다시 생성
      */
     public MusicRegenerateResponse regenerateFromPromptOnly(String sessionId, Integer userId, String title) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
+
         MusicSummary summary = summaryRepo.findBySessionId(sessionId)
                 .orElseThrow(() -> new RuntimeException("GPT 요약 없음"));
 
@@ -185,7 +194,7 @@ public class MusicService {
 
         BaseMusic music = new BaseMusic();
         music.setSessionId(sessionId);
-        music.setUserId(userId);
+        music.setUser(user);
         music.setTitle(title);
         music.setFileUrl(fileUrl);
 

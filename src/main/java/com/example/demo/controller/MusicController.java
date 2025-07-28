@@ -3,11 +3,13 @@ package com.example.demo.controller;
 import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MusicSummary;
+import com.example.demo.domain.User;
 import com.example.demo.dto.music.MusicRegenerateRequest;
 import com.example.demo.dto.music.MusicRegenerateResponse;
 import com.example.demo.dto.music.MotionMusicRegenerateResponse;
 import com.example.demo.repository.BaseMusicRepository;
 import com.example.demo.repository.MusicSummaryRepository;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.MusicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -27,6 +29,7 @@ public class MusicController {
     private final BaseMusicRepository baseMusicRepo;
     private final MusicSummaryRepository summaryRepo;
     private final MusicService musicService;
+    private UserRepository userRepository;
 
     /**
      * 프롬프트 + 허밍으로 기본 음악 생성
@@ -39,6 +42,9 @@ public class MusicController {
             @RequestParam("prompt") String prompt,
             @RequestPart("file") MultipartFile file) throws IOException {
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
+
         String finalTitle = (title == null || title.isBlank())
                 ? "나의 노래" + (baseMusicRepo.countByUserId(userId) + 1)
                 : title;
@@ -50,7 +56,7 @@ public class MusicController {
 
         BaseMusic music = new BaseMusic();
         music.setSessionId(sessionId);
-        music.setUserId(userId);
+        music.setUser(user);
         music.setTitle(finalTitle);
         music.setFileUrl(fileUrl);
         baseMusicRepo.save(music);
