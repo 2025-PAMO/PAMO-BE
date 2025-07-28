@@ -4,5 +4,6 @@ import com.example.demo.domain.BaseMusic;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BaseMusicRepository extends JpaRepository<BaseMusic, Integer> {
+    long countByUserId(Integer userId);
 }
 

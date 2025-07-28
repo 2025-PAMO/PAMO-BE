@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.summary.MusicGenerateRequest;
+import com.example.demo.dto.music.MusicGenerateRequest;
 import com.example.demo.dto.summary.SummaryDTO;
 import com.example.demo.dto.summary.SummaryRequest;
 import com.example.demo.domain.MusicSummary;
