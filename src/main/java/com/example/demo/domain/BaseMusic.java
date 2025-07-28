@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,6 +22,13 @@ public class BaseMusic {
     @Column(name="session_id", length = 64)
     private String sessionId;
 
+
+    //userId 수정
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+
     @Column(name = "user_id")
     private Integer userId;
 
@@ -29,6 +38,12 @@ public class BaseMusic {
     @Column(name = "file_url")
     private String fileUrl;
 
-    //Getter,Setter,Constructor
+    @OneToMany(mappedBy = "baseMusic", cascade = CascadeType.ALL)
+    private List<MotionMusic> motionMusics;
+
+    @OneToMany(mappedBy = "baseMusic", cascade = CascadeType.ALL)
+    private List<BaseMusicLike> likes;
+
+
 
 }

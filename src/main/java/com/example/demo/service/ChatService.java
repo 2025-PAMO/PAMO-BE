@@ -3,9 +3,12 @@ package com.example.demo.service;
 import com.example.demo.converter.ChatConverter;
 import com.example.demo.domain.ChatStatus;
 import com.example.demo.domain.Message;
+import com.example.demo.domain.User;
 import com.example.demo.dto.chat.ChatAnswerResponseDTO;
 import com.example.demo.dto.chat.GPTRequestDTO;
 import com.example.demo.dto.chat.GPTResponseDTO;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.util.SimilarityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,16 +27,19 @@ public class ChatService {
     private String apiURL;
 
     private final RestTemplate template;
+    private final UserRepository userRepository;
 
     // 로컬 채팅 로그 (DB 대신 사용)
     private final Map<Integer, List<Message>> userMessageLog = new HashMap<>();
 
-    public ChatAnswerResponseDTO askGPT(Integer userId, String prompt, String jwtToken) {
+    public ChatAnswerResponseDTO askGPT(Integer userId, String prompt) {
+
+        ensureUserExists(userId); // 유저 생성 또는 존재 확인
+
         List<Message> chatLog = userMessageLog.computeIfAbsent(userId, id -> new ArrayList<>());
         chatLog.add(new Message("user", prompt));
 
         ChatStatus status = determineStatus(prompt);
-        String processedPrompt = prompt;
 
         if (status == ChatStatus.SUMMARY) {
             if (!isContentSufficient(chatLog)) {
@@ -51,12 +57,7 @@ public class ChatService {
         // GPT 요청 메시지 구성
         List<Message> messages = new ArrayList<>();
         messages.add(new Message("system", buildSystemPrompt(status)));
-
-        if (status == ChatStatus.SUMMARY) {
-            messages.addAll(chatLog);
-        } else {
-            messages.add(new Message("user", processedPrompt));
-        }
+        messages.addAll(chatLog); // 기존 대화 전체 포함
 
         GPTRequestDTO request = new GPTRequestDTO(model, messages);
         GPTResponseDTO response = template.postForObject(apiURL, request, GPTResponseDTO.class);
@@ -67,35 +68,71 @@ public class ChatService {
         return ChatConverter.toAnswerDto(answer, status);
     }
 
-    private String buildSystemPrompt(ChatStatus status) {
-        if (status == ChatStatus.SUMMARY) {
-            return "다음 정보를 바탕으로 사용자 의도를 요약해주세요. [장르: ~, 분위기: ~, 장소: ~, 빠르기: ~, 함께 들을 사람: ~]";
-        } else {
-            return "당신은 사용자가 만들고자 하는 음악을 구체화하는 데 도움을 주는 AI입니다.\n"
-                    + "당신의 목적은 사용자와의 대화를 통해 음악 생성에 필요한 요소(장르, 분위기, 빠르기, 사용될 상황, 함께 듣고 싶은 사람 등)를 자세히 수집하는 것입니다.\n"
-                    + "\n"
-                    + "아래 조건을 반드시 따르세요:\n"
-                    + "\n"
-                    + "1. 대화의 목적은 음악 생성에 필요한 정보를 수집하는 것입니다. 음악과 무관한 질문에는 “저는 음악 생성 전용 AI입니다. 음악 생성에 대한 질문만 도와드릴 수 있어요.”라고 응답하십시오.\n"
-                    + "\n"
-                    + "2. 사용자가 추상적으로 대답할 경우(예: “신나는 음악”) 구체적인 질문을 이어가세요. 예: “그 신나는 음악은 어떤 장르를 생각하시나요?”, “이 음악은 어떤 장소에서 듣고 싶으신가요?” 등.\n"
-                    + "\n"
-                    + "3. 사용자가 \"모르겠어요\"라고 답하면, 예시나 제안을 제공해 선택지를 넓혀주세요. 예: “그렇다면 이런 장르는 어떠세요? 일렉트로닉, 팝, 락 등…”\n"
-                    + "\n"
-                    + "4. 사용자가 \"요약해줘\"라고 하면 지금까지의 대화 내용이 충분한 경우에만 요약을 제공합니다.\n"
-                    + "   - 충분함의 기준은 장르/빠르기/장소/상황/함께 듣고 싶은 사람 등 **5개 요소 중 3개 이상이 포함되어야 합니다.**\n"
-                    + "   - 불충분한 경우에는 “아직 요약하기엔 정보가 부족해요. 몇 가지 더 여쭤볼게요.”라고 답하고 대화를 이어가세요.\n"
-                    + "\n"
-                    + "5. 사용자가 \"그만\", \"끝\", \"종료\"와 같은 종료 요청을 할 경우에도, 요약이 먼저 이루어지지 않았다면 종료하지 말고 “요약이 먼저 필요해요. ‘요약해줘’라고 요청해주세요.”라고 안내하십시오.\n"
-                    + "\n"
-                    + "항상 친절하고 대화를 이어가며, 사용자에게 질문을 던지고 음악적 상상력을 넓혀주는 역할을 하십시오.";
+    private void ensureUserExists(Integer userId) {
+        if (!userRepository.existsById(userId)) {
+            User dummy = new User();
+            dummy.setNickname("테스트유저");
+            dummy.setProfileImage(null);
+            dummy.setJoinType("test");
+            userRepository.save(dummy);
         }
     }
 
+    private String buildSystemPrompt(ChatStatus status) {
+        if (status == ChatStatus.SUMMARY) {
+            return "지금까지의 대화를 바탕으로 사용자가 원하는 음악의 특징을 요약해주세요. 다음 형식을 반드시 따르세요: " +
+                    "장르: (예: 락, 팝, 재즈 등), 분위기: (예: 신나는, 잔잔한 등), 장소/상황: (예: 운동할 때, 카페에서 등), " +
+                    "빠르기: (예: 빠름, 중간, 느림), 함께 들을 사람: (예: 친구, 연인 등). " +
+                    "5개 중 최소 3개 이상의 항목을 포함하세요. 대답은 위 형식을 그대로 사용하고, 설명이나 말투를 덧붙이지 마세요.";
+        } else {
+            return
+                    "당신은 사용자가 만들고자 하는 음악을 구체화하는 데 도움을 주는 AI입니다. " +
+                            "목표는 사용자와의 대화를 통해 음악 생성에 필요한 요소(장르, 분위기, 빠르기, 장소, 함께 들을 사람 등)를 하나씩 수집하는 것입니다. " +
+                            "다음 규칙을 따르세요: " +
+
+                            "1. 사용자의 응답이 추상적이면, 그 중 하나의 요소에 대해 구체적인 질문을 던지세요. 예: ‘신나는 음악’ → ‘어떤 장르의 음악을 생각하시나요?’ " +
+
+                            "2. 한 번에 하나의 정보만 물어보세요. 예: 템포, 장소, 분위기 등을 동시에 묻지 마세요. " +
+
+                            "3. 사용자가 '모르겠어요'라고 하면, 예시를 간단히 하나씩 제시하고 선택할 수 있도록 도와주세요. " +
+
+                            "4. 사용자가 '요약해줘'라고 하면, 수집한 정보가 충분한 경우에만 요약을 해주세요. 부족하다면 더 필요한 정보를 알려주세요. " +
+
+                            "5. 사용자가 '그만', '끝', '종료'라고 해도, 요약이 아직 안 됐다면 먼저 요약을 유도하세요. " +
+
+                            "6. 대화가 충분히 구체화되었다고 판단되면, 사용자가 대화를 종료하거나 요약을 요청할 수 있도록 유도하세요. " +
+                            "반드시 '요약', '정리', '마무리', '끝' 같은 단어를 포함한 문장을 사용하세요. 예: " +
+                            "'이제 어느 정도 정리된 것 같아요. 요약해드릴까요?', '이 정도면 음악을 만들 준비가 된 것 같아요. 요약해볼까요?' " +
+
+                            "또는 '마무리하고 싶으시면 요약해줘라고 말씀해주세요.'와 같이 유도하세요. " +
+
+                            "항상 짧고 간결하게, 친절한 어조로 응답하고 대화를 이어가며 필요한 정보를 하나씩 얻어내는 데 집중하세요.";
+        }
+    }
+
+
     private ChatStatus determineStatus(String prompt) {
-        String lower = prompt.toLowerCase();
-        if (lower.contains("요약") || lower.contains("정리")) return ChatStatus.SUMMARY;
-        if (lower.contains("끝") || lower.contains("종료") || lower.contains("그만")) return ChatStatus.END;
+        String lowerPrompt = prompt.toLowerCase();
+
+        List<String> summaryPhrases = List.of("요약", "정리해줘", "요약 좀", "이제 요약", "정리해볼까", "정리");
+        List<String> endPhrases = List.of("그만", "종료", "끝내자", "마무리할래", "마무리할게", "마무리하고싶어", "이제 끝", "끝낼래", "끝");
+
+        for (String keyword : summaryPhrases) {
+            // double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
+            // System.out.println("[유사도 로그] summary: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
+            if (lowerPrompt.contains(keyword)) {
+                return ChatStatus.SUMMARY;
+            }
+        }
+
+        for (String keyword : endPhrases) {
+            // double score = SimilarityUtil.similarityScore(lowerPrompt, keyword);
+            // System.out.println("[유사도 로그] end: \"" + lowerPrompt + "\" vs \"" + keyword + "\" → " + score);
+            if (lowerPrompt.contains(keyword)) {
+                return ChatStatus.END;
+            }
+        }
+
         return ChatStatus.CHAT;
     }
 

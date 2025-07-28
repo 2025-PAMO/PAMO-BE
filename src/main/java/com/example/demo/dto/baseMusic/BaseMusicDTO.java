@@ -1,0 +1,19 @@
+package com.example.demo.dto.baseMusic;
+
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BaseMusicDTO {
+    private Integer baseMusicId;
+    private String title;
+    private String artist;
+    private String musicFileUrl;
+    private boolean isBookmarked;
+}

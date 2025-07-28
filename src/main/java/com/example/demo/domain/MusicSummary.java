@@ -26,5 +26,4 @@ public class MusicSummary {
     @Column(name = "created_at", insertable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Timestamp createdAt;
 
-    // getter,setter, constructor 등 입력
 }
