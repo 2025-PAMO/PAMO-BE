@@ -17,6 +17,10 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+    public User getUser(String userId) {
+        return userRepository.findByUserId(userId);
+    }
+
     public UserDto getUserProfile(Integer id) {
         User entity = userRepository.findById(id)
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));

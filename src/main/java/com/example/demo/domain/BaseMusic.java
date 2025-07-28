@@ -22,6 +22,7 @@ public class BaseMusic {
     @Column(name="session_id", length = 64)
     private String sessionId;
 
+    //userId 수정
     @Column(name = "user_id")
     private Integer userId;
 
