@@ -22,7 +22,13 @@ public class BaseMusic {
     @Column(name="session_id", length = 64)
     private String sessionId;
 
+
     //userId 수정
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+
     @Column(name = "user_id")
     private Integer userId;
 

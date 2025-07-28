@@ -1,0 +1,19 @@
+package com.example.demo.dto.motionMusic;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class MotionMusicDTO {
+    private Integer motionMusicId;
+    private String title;
+    private String artist;
+    private String coverImageUrl;
+    private int likeCount;
+    private boolean visibility;
+}
