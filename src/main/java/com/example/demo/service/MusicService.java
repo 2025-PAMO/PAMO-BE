@@ -138,7 +138,7 @@ public class MusicService {
 
         // DB 저장
         MotionMusic motionMusic = new MotionMusic();
-        motionMusic.setBaseMusicId(baseMusicId);
+        motionMusic.setBaseMusic(baseMusic);
         motionMusic.setFileUrl(newFileUrl);
         motionMusicRepo.save(motionMusic);
 
