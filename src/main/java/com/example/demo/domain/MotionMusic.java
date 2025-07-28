@@ -20,14 +20,11 @@ public class MotionMusic {
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "user_id")
-    private Integer userId;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "base_music_id", insertable = false, updatable = false)
+    @JoinColumn(name = "base_music_id", nullable = false)
     private BaseMusic baseMusic;
 
     @Column(name = "session_id", length = 64)

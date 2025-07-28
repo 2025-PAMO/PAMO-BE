@@ -23,7 +23,7 @@ public class BaseMusic {
     private String sessionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "title")
@@ -37,5 +37,8 @@ public class BaseMusic {
 
     @OneToMany(mappedBy = "baseMusic", cascade = CascadeType.ALL)
     private List<BaseMusicLike> likes;
+
+    @OneToOne(mappedBy = "baseMusic", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    private MusicSummary musicSummary;
 
 }

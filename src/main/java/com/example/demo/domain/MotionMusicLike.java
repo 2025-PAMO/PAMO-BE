@@ -27,9 +27,6 @@ public class MotionMusicLike {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "motion_music_id", nullable = false)
     private MotionMusic motionMusic;
-    //베이스뮤직
-    //베이스뮤직like
-    //모션뮤직like
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
