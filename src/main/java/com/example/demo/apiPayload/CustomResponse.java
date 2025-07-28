@@ -1,5 +1,6 @@
 package com.example.demo.apiPayload;
 
+import com.example.demo.apiPayload.code.BaseErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -43,4 +44,8 @@ public class CustomResponse<T> {
     public static <T> CustomResponse<T> onFailure(String code, String message) {
         return new CustomResponse<>(false, code, message, null);
     }
+    public static <T> CustomResponse<T> onFailure(BaseErrorCode errorCode) {
+        return new CustomResponse<>(false, errorCode.getCode(), errorCode.getMessage(), null);
+    }
+
 }
