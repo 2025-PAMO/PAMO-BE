@@ -2,35 +2,22 @@ package com.example.demo.oauth.handler;
 
 import com.example.demo.oauth.config.AppProperties;
 import com.example.demo.oauth.domain.UserRefreshToken;
-import com.example.demo.oauth.entity.ProviderType;
-import com.example.demo.oauth.entity.RoleType;
 import com.example.demo.oauth.entity.UserPrincipal;
-import com.example.demo.oauth.info.OAuth2UserInfo;
-import com.example.demo.oauth.info.OAuth2UserInfoFactory;
 import com.example.demo.oauth.token.AuthToken;
 import com.example.demo.oauth.token.AuthTokenProvider;
-import com.example.demo.repository.OAuth2AuthorizationRequestBasedOnCookieRepository;
 import com.example.demo.repository.UserRefreshTokenRepository;
 import com.example.demo.util.CookieUtil;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
+import com.example.demo.util.RefreshTokenCookieManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.Collection;
 import java.util.Date;
-import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
@@ -38,7 +25,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final AuthTokenProvider tokenProvider;
     private final AppProperties appProperties;
     private final UserRefreshTokenRepository refreshTokenRepository;
-    private final OAuth2AuthorizationRequestBasedOnCookieRepository authRequestRepo;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
@@ -76,6 +62,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         response.sendRedirect("/login/success?token=" + accessToken.getToken());
 
         // 인증 요청 관련 쿠키 제거
-        authRequestRepo.removeAuthorizationRequestCookies(request, response);
+        RefreshTokenCookieManager.clear(request, response);
     }
 }
