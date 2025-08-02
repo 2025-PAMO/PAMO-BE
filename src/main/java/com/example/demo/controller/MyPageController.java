@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.apiPayload.CustomResponse;
+import com.example.demo.dto.motionMusic.TitleUpdateRequestDTO;
 import com.example.demo.dto.motionMusic.VisibilityUpdateRequestDTO;
 import com.example.demo.dto.myMusic.MyMusicResponseDTO;
 import com.example.demo.service.MyPageService;
@@ -38,6 +39,15 @@ public class MyPageController {
             ){
         myPageService.updateVisibility(id, requestDTO.getVisibility());
         return CustomResponse.onSuccess("모션 음악 공개 여부가 성공적으로 변경되었습니다.");
+    }
+
+    @PatchMapping("/motion-music/{id}/title")
+    public CustomResponse<String> updateTitle(
+            @PathVariable("id") Integer id,
+            @RequestBody TitleUpdateRequestDTO requestDTO
+    ){
+        myPageService.updateMotionMusicTitle(id, requestDTO.getTitle());
+        return CustomResponse.onSuccess("모션 음악 제목이 성공적으로 수정되었습니다.");
     }
 
 }

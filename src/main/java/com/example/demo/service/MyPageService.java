@@ -115,4 +115,12 @@ public class MyPageService {
 
         motionMusic.setVisibility(visibility);
     }
+
+    @Transactional
+    public void updateMotionMusicTitle(Integer id, String newTitle) {
+        MotionMusic motionMusic = motionMusicRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
+
+        motionMusic.setTitle(newTitle);
+    }
 }
