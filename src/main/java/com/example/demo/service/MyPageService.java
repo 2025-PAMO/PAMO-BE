@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.domain.BaseMusic;
+import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.User;
 import com.example.demo.dto.baseMusic.BaseMusicDTO;
 import com.example.demo.dto.motionMusic.MotionMusicDTO;
@@ -13,10 +15,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class MyPageService {
+
     private final UserRepository userRepository;
     private final MotionMusicRepository motionMusicRepository;
     private final BaseMusicRepository baseMusicRepository;
@@ -24,99 +27,71 @@ public class MyPageService {
     private final BaseMusicLikeRepository baseMusicLikeRepository;
 
     public MyMusicResponseDTO getMyMusic(Integer userId, String type) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
+        User user = getUserOrThrow(userId);
         UserProfileDTO userProfile = getUserProfile(user);
 
-        if ("motion".equalsIgnoreCase(type)) {
-            List<MotionMusicDTO> motionMusicList = motionMusicRepository.findByUser(user)
-                    .stream()
-                    .map(m -> MotionMusicDTO.builder()
-                            .motionMusicId(m.getId())
-                            .title(m.getTitle())
-                            .artist(user.getNickname())
-                            .coverImageUrl(m.getCover())
-                            .likeCount(m.getLikes() != null ? m.getLikes().size() : 0)
-                            .visibility(m.getVisibility() != null && m.getVisibility())
-                            .build())
-                    .collect(Collectors.toList());
-
-            return MyMusicResponseDTO.builder()
-                    .user(userProfile)
-                    .type("motion")
-                    .myMusicList(motionMusicList)
-                    .build();
-
-        } else if ("base".equalsIgnoreCase(type)) {
-            List<BaseMusicDTO> baseMusicList = baseMusicRepository.findByUser(user)
-                    .stream()
-                    .map(b -> BaseMusicDTO.builder()
-                            .baseMusicId(b.getId())
-                            .title(b.getTitle())
-                            .artist(user.getNickname())
-                            .musicFileUrl(b.getFileUrl())
-                            .isBookmarked(b.getLikes().stream().anyMatch(like -> like.getUser().getId().equals(user.getId())))
-                            .build())
-                    .collect(Collectors.toList());
-            
-            return MyMusicResponseDTO.builder()
-                    .user(userProfile)
-                    .type("base")
-                    .myMusicList(baseMusicList)
-                    .build();
-
-        } else {
-            throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
-        }
+        return switch (type.toLowerCase()) {
+            case "motion" -> buildMyMusicResponse(userProfile, "motion",
+                    motionMusicRepository.findByUser(user).stream()
+                            .map(m -> toMotionMusicDTO(m, user.getNickname()))
+                            .collect(Collectors.toList()));
+            case "base" -> buildMyMusicResponse(userProfile, "base",
+                    baseMusicRepository.findByUser(user).stream()
+                            .map(b -> toBaseMusicDTO(b, userId))
+                            .collect(Collectors.toList()));
+            default -> throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
+        };
     }
 
     public MyMusicResponseDTO getMyLibrary(Integer userId, String type) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
+        User user = getUserOrThrow(userId);
         UserProfileDTO userProfile = getUserProfile(user);
 
-        if ("motion".equalsIgnoreCase(type)) {
-            List<MotionMusicDTO> motionMusicList = motionMusicLikeRepository.findAllUserLikedVisibleMusicOrderByLikedAtAsc(userId)
-                    .stream()
-                    .map(m -> MotionMusicDTO.builder()
-                            .motionMusicId(m.getId())
-                            .title(m.getTitle())
-                            .artist(m.getUser().getNickname())
-                            .coverImageUrl(m.getCover())
-                            .likeCount(m.getLikes() != null ? m.getLikes().size() : 0)
-                            .visibility(m.getVisibility() != null && m.getVisibility())
-                            .build())
-                    .collect(Collectors.toList());
+        return switch (type.toLowerCase()) {
+            case "motion" -> buildMyMusicResponse(userProfile, "motion",
+                    motionMusicLikeRepository.findAllUserLikedVisibleMusicOrderByLikedAtAsc(userId).stream()
+                            .map(m -> toMotionMusicDTO(m, m.getUser().getNickname()))
+                            .collect(Collectors.toList()));
+            case "base" -> buildMyMusicResponse(userProfile, "base",
+                    baseMusicLikeRepository.findAllUserLikedBaseMusicOrderByLikedAtAsc(userId).stream()
+                            .map(b -> toBaseMusicDTO(b, userId))
+                            .collect(Collectors.toList()));
+            default -> throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
+        };
+    }
 
-            return MyMusicResponseDTO.builder()
-                    .user(userProfile)
-                    .type("motion")
-                    .myMusicList(motionMusicList)
-                    .build();
+    private User getUserOrThrow(Integer userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+    }
 
-        } else if ("base".equalsIgnoreCase(type)) {
-            List<BaseMusicDTO> baseMusicList = baseMusicLikeRepository.findAllUserLikedBaseMusicOrderByLikedAtAsc(userId)
-                    .stream()
-                    .map(b -> BaseMusicDTO.builder()
-                            .baseMusicId(b.getId())
-                            .title(b.getTitle())
-                            .artist(b.getUser().getNickname())
-                            .musicFileUrl(b.getFileUrl())
-                            .isBookmarked(b.getLikes().stream().anyMatch(like -> like.getUser().getId().equals(userId)))
-                            .build())
-                    .collect(Collectors.toList());
+    private MyMusicResponseDTO buildMyMusicResponse(UserProfileDTO user, String type, List<?> musicList) {
+        return MyMusicResponseDTO.builder()
+                .user(user)
+                .type(type)
+                .myMusicList(musicList)
+                .build();
+    }
 
-            return MyMusicResponseDTO.builder()
-                    .user(userProfile)
-                    .type("base")
-                    .myMusicList(baseMusicList)
-                    .build();
+    private MotionMusicDTO toMotionMusicDTO(MotionMusic m, String artistName) {
+        return MotionMusicDTO.builder()
+                .motionMusicId(m.getId())
+                .title(m.getTitle())
+                .artist(artistName)
+                .coverImageUrl(m.getCover())
+                .likeCount(m.getLikes() != null ? m.getLikes().size() : 0)
+                .visibility(Boolean.TRUE.equals(m.getVisibility()))
+                .build();
+    }
 
-        } else {
-            throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
-        }
+    private BaseMusicDTO toBaseMusicDTO(BaseMusic b, Integer viewerUserId) {
+        return BaseMusicDTO.builder()
+                .baseMusicId(b.getId())
+                .title(b.getTitle())
+                .artist(b.getUser().getNickname())
+                .musicFileUrl(b.getFileUrl())
+                .isBookmarked(b.getLikes().stream().anyMatch(like -> like.getUser().getId().equals(viewerUserId)))
+                .build();
     }
 
     public UserProfileDTO getUserProfile(User user) {
@@ -128,5 +103,4 @@ public class MyPageService {
                 .profileImage(user.getProfileImage())
                 .build();
     }
-
 }
