@@ -42,12 +42,21 @@ public class MyPageController {
     }
 
     @PatchMapping("/motion-music/{id}/title")
-    public CustomResponse<String> updateTitle(
+    public CustomResponse<String> updateMotionMusicTitle(
             @PathVariable("id") Integer id,
             @RequestBody TitleUpdateRequestDTO requestDTO
     ){
         myPageService.updateMotionMusicTitle(id, requestDTO.getTitle());
         return CustomResponse.onSuccess("모션 음악 제목이 성공적으로 수정되었습니다.");
+    }
+
+    @PatchMapping("/base-music/{id}/title")
+    public CustomResponse<String> updateBaseMusicTitle(
+            @PathVariable("id") Integer id,
+            @RequestBody TitleUpdateRequestDTO requestDTO
+    ){
+        myPageService.updateBaseMusicTitle(id, requestDTO.getTitle());
+        return CustomResponse.onSuccess("기본 음악 제목이 성공적으로 수정되었습니다.");
     }
 
 }

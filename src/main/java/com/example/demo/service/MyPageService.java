@@ -123,4 +123,12 @@ public class MyPageService {
 
         motionMusic.setTitle(newTitle);
     }
+
+    @Transactional
+    public void updateBaseMusicTitle(Integer id, String newTitle) {
+        BaseMusic baseMusic = baseMusicRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 기본 음악을 찾을 수 없습니다."));
+
+        baseMusic.setTitle(newTitle);
+    }
 }
