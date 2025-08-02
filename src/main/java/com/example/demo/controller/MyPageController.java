@@ -31,7 +31,7 @@ public class MyPageController {
         return CustomResponse.onSuccess(result);
     }
 
-    @PatchMapping("motion-music/{id}/visibility")
+    @PatchMapping("/motion-music/{id}/visibility")
     public CustomResponse<String> updateVisibility(
             @PathVariable("id") Integer id,
             @RequestBody VisibilityUpdateRequestDTO requestDTO
