@@ -8,9 +8,11 @@ import com.example.demo.dto.motionMusic.MotionMusicDTO;
 import com.example.demo.dto.myMusic.MyMusicResponseDTO;
 import com.example.demo.dto.user.UserProfileDTO;
 import com.example.demo.repository.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +28,7 @@ public class MyPageService {
     private final MotionMusicLikeRepository motionMusicLikeRepository;
     private final BaseMusicLikeRepository baseMusicLikeRepository;
 
+    @Transactional(readOnly = true)
     public MyMusicResponseDTO getMyMusic(Integer userId, String type) {
         User user = getUserOrThrow(userId);
         UserProfileDTO userProfile = getUserProfile(user);
@@ -43,6 +46,7 @@ public class MyPageService {
         };
     }
 
+    @Transactional(readOnly = true)
     public MyMusicResponseDTO getMyLibrary(Integer userId, String type) {
         User user = getUserOrThrow(userId);
         UserProfileDTO userProfile = getUserProfile(user);
@@ -102,5 +106,13 @@ public class MyPageService {
                 .email(user.getEmail())
                 .profileImage(user.getProfileImage())
                 .build();
+    }
+
+    @Transactional
+    public void updateVisibility(Integer musicId, Boolean visibility) {
+        MotionMusic motionMusic = motionMusicRepository.findById(musicId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
+
+        motionMusic.setVisibility(visibility);
     }
 }

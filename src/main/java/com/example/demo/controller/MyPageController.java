@@ -1,13 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.apiPayload.CustomResponse;
+import com.example.demo.dto.motionMusic.VisibilityUpdateRequestDTO;
 import com.example.demo.dto.myMusic.MyMusicResponseDTO;
 import com.example.demo.service.MyPageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/mypage")
@@ -31,6 +29,15 @@ public class MyPageController {
     ){
         MyMusicResponseDTO result = myPageService.getMyLibrary(id, type);
         return CustomResponse.onSuccess(result);
+    }
+
+    @PatchMapping("motion-music/{id}/visibility")
+    public CustomResponse<String> updateVisibility(
+            @PathVariable("id") Integer id,
+            @RequestBody VisibilityUpdateRequestDTO requestDTO
+            ){
+        myPageService.updateVisibility(id, requestDTO.getVisibility());
+        return CustomResponse.onSuccess("모션 음악 공개 여부가 성공적으로 변경되었습니다.");
     }
 
 }
