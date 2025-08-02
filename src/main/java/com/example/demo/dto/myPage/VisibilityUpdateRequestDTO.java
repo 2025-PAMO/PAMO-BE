@@ -1,4 +1,4 @@
-package com.example.demo.dto.motionMusic;
+package com.example.demo.dto.myPage;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,9 +1,9 @@
 package com.example.demo.controller;
 
 import com.example.demo.apiPayload.CustomResponse;
-import com.example.demo.dto.motionMusic.TitleUpdateRequestDTO;
-import com.example.demo.dto.motionMusic.VisibilityUpdateRequestDTO;
-import com.example.demo.dto.myMusic.MyMusicResponseDTO;
+import com.example.demo.dto.myPage.TitleUpdateRequestDTO;
+import com.example.demo.dto.myPage.VisibilityUpdateRequestDTO;
+import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.service.MyPageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

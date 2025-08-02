@@ -3,9 +3,9 @@ package com.example.demo.service;
 import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.User;
-import com.example.demo.dto.baseMusic.BaseMusicDTO;
-import com.example.demo.dto.motionMusic.MotionMusicDTO;
-import com.example.demo.dto.myMusic.MyMusicResponseDTO;
+import com.example.demo.dto.myPage.BaseMusicDTO;
+import com.example.demo.dto.myPage.MotionMusicDTO;
+import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.dto.user.UserProfileDTO;
 import com.example.demo.repository.*;
 

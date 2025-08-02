@@ -1,4 +1,4 @@
-package com.example.demo.dto.myMusic;
+package com.example.demo.dto.myPage;
 
 import com.example.demo.dto.user.UserProfileDTO;
 import lombok.AllArgsConstructor;
