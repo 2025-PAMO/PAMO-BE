@@ -4,7 +4,7 @@ import com.example.demo.domain.User;
 import com.example.demo.dto.baseMusic.BaseMusicDTO;
 import com.example.demo.dto.motionMusic.MotionMusicDTO;
 import com.example.demo.dto.myMusic.MyMusicResponseDTO;
-import com.example.demo.dto.user.UserDto;
+import com.example.demo.dto.user.UserProfileDTO;
 import com.example.demo.repository.BaseMusicRepository;
 import com.example.demo.repository.MotionMusicRepository;
 import com.example.demo.repository.UserRepository;
@@ -27,9 +27,11 @@ public class MyMusicService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        UserDto userProfile = UserDto.builder()
+        UserProfileDTO userProfile = UserProfileDTO.builder()
                 .id(user.getId())
                 .nickname(user.getNickname())
+                .providerType(user.getProviderType())
+                .email(user.getEmail())
                 .profileImage(user.getProfileImage())
                 .build();
 
