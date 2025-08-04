@@ -4,6 +4,7 @@ import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.dto.chat.ChatAnswerResponseDTO;
 import com.example.demo.dto.chat.ChatRequestDTO;
 import com.example.demo.service.ChatService;
+import com.example.demo.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +20,10 @@ public class ChatController {
     @PostMapping("/ask")
     public CustomResponse<ChatAnswerResponseDTO> askQuestion(
             @RequestBody ChatRequestDTO request) {
+        Integer userId = SecurityUtil.getCurrentUserId();
 
         ChatAnswerResponseDTO responseDto = chatService.askGPT(
-                request.getUserId(),
+                userId,
                 request.getQuestion()
         );
         return CustomResponse.onSuccess(responseDto);

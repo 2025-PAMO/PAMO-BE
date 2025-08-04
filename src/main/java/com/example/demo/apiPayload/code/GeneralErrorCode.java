@@ -16,7 +16,9 @@ public enum GeneralErrorCode implements BaseErrorCode {
     INTERNAL_SERVER_ERROR_500(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500", "서버 내부 오류가 발생했습니다"),
     // 유효성 검사
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "VALID400_0", "잘못된 파라미터 입니다."),
-    INVALID_TOKEN(HttpStatus.BAD_REQUEST, "VALID400_1", "유효하지 않은 액세스 토큰입니다.");
+    INVALID_TOKEN(HttpStatus.BAD_REQUEST, "VALID400_1", "유효하지 않은 액세스 토큰입니다."),
+
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "존재하지 않는 사용자입니다");
 
 
     // 필요한 필드값 선언
