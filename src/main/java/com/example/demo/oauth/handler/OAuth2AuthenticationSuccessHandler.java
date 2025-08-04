@@ -35,12 +35,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         long refreshTokenExpiry = appProperties.getAuth().getRefreshTokenExpiry();
 
         AuthToken accessToken = tokenProvider.createAuthToken(
+                principal.getId(),
                 principal.getUserId(),
                 principal.getRoleType().getCode(),
                 new Date(now.getTime() + accessTokenExpiry)
         );
 
         AuthToken refreshToken = tokenProvider.createAuthToken(
+                principal.getId(),
                 principal.getUserId(),
                 principal.getRoleType().getCode(),
                 new Date(now.getTime() + refreshTokenExpiry)

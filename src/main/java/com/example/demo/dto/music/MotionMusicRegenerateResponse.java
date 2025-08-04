@@ -8,4 +8,5 @@ import lombok.Getter;
 public class MotionMusicRegenerateResponse {
     private Integer motionMusicId;
     private String fileUrl;
+    private String baseTitle;
 }

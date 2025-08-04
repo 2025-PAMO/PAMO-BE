@@ -16,16 +16,17 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserPrincipal implements OAuth2User, UserDetails {
 
+    private final Integer id;
     private final String userId;
     private final RoleType roleType;
     private Map<String, Object> attributes;
 
-    public static UserPrincipal of(String userId, RoleType roleType) {
-        return new UserPrincipal(userId, roleType);
+    public static UserPrincipal of(Integer id, String userId, RoleType roleType) {
+        return new UserPrincipal(id, userId, roleType);
     }
 
     public static UserPrincipal create(User user, Map<String, Object> attributes) {
-        UserPrincipal userPrincipal = new UserPrincipal(user.getUserId(), user.getRoleType());
+        UserPrincipal userPrincipal = new UserPrincipal(user.getId(), user.getUserId(), user.getRoleType());
         userPrincipal.setAttributes(attributes);
         return userPrincipal;
     }

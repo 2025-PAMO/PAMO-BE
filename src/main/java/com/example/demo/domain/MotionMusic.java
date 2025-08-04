@@ -27,6 +27,9 @@ public class MotionMusic {
     @JoinColumn(name = "base_music_id", nullable = false)
     private BaseMusic baseMusic;
 
+    @Column(name = "base_title")
+    private String baseTitle;
+
     @Column(name = "session_id", length = 64)
     private String sessionId;
 

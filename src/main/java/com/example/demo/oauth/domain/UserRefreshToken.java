@@ -26,9 +26,9 @@ public class UserRefreshToken {
     @Size(max = 64)
     private String userId;
 
-    @Column(name = "REFRESH_TOKEN", length = 256)
+    @Column(name = "REFRESH_TOKEN", length = 512)
     @NotNull
-    @Size(max = 256)
+    @Size(max = 512)
     private String refreshToken;
 
     public UserRefreshToken(
