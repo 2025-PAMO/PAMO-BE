@@ -20,7 +20,8 @@ import java.util.Date;
 public class AuthTokenProvider {
 
 
-    @Value("${jwt.secret}")
+    @Value("${app.auth.tokenSecret}")
+
     private String secret;
 
     private Key key;
@@ -30,8 +31,8 @@ public class AuthTokenProvider {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public AuthToken createAuthToken(String userId, String role, Date expiry) {
-        return new AuthToken(userId, role, expiry, key);
+    public AuthToken createAuthToken(Integer id, String userId, String role, Date expiry) {
+        return new AuthToken(id, userId, role, expiry, key);
     }
 
     public AuthToken createAuthToken(String token) {
@@ -40,10 +41,24 @@ public class AuthTokenProvider {
 
     public Authentication getAuthentication(AuthToken authToken) {
         Claims claims = authToken.getTokenClaims();
+        //Integer id = claims.get("id", Integer.class);
+
+        Object idObj = claims.get("id");
+
+
+        System.out.println("[디버깅] claim에서 꺼낸 id: " + idObj);
+        Integer id = null;
+        if (idObj instanceof Integer) {
+            id = (Integer) idObj;
+        } else if (idObj instanceof String) {
+            id = Integer.valueOf((String) idObj); // 이거 아니면 파싱 오류로 401
+        }
+
         String userId = claims.getSubject();
         RoleType role = RoleType.of(claims.get("role", String.class));
 
-        UserPrincipal userPrincipal = UserPrincipal.of(userId, role);
+        UserPrincipal userPrincipal = UserPrincipal.of(id, userId, role);
+        System.out.println("[디버깅] 만든 Principal: " + userPrincipal);
         return new UsernamePasswordAuthenticationToken(userPrincipal, authToken, userPrincipal.getAuthorities());
     }
 

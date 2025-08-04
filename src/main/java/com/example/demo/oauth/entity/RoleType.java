@@ -17,7 +17,7 @@ public enum RoleType {
 
     public static RoleType of(String authority) {
         return Arrays.stream(values())
-                .filter(r -> r.name().equalsIgnoreCase(authority))
+                .filter(r -> r.code.equals(authority))
                 .findAny()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid role: " + authority));
     }
