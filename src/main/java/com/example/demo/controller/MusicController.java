@@ -28,12 +28,9 @@ public class MusicController {
 
     private final BaseMusicRepository baseMusicRepo;
     private final MusicSummaryRepository summaryRepo;
+    private final UserRepository userRepository;
     private final MusicService musicService;
-    private UserRepository userRepository;
 
-    /**
-     * 프롬프트 + 허밍으로 기본 음악 생성
-     */
     @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CustomResponse<Map<String, Object>>> generateMusic(
             @RequestParam("sessionId") String sessionId,
@@ -43,10 +40,10 @@ public class MusicController {
             @RequestPart("file") MultipartFile file) throws IOException {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
-        String finalTitle = (title == null || title.isBlank())
-                ? "나의 노래" + (baseMusicRepo.countByUserId(userId) + 1)
+        String resolvedTitle = (title == null || title.isBlank())
+                ? "나의 노래 " + (baseMusicRepo.countByUserId(userId) + 1)
                 : title;
 
         String fileUrl = musicService.generateMusicAndUpload(prompt, file);
@@ -57,7 +54,7 @@ public class MusicController {
         BaseMusic music = new BaseMusic();
         music.setSessionId(sessionId);
         music.setUser(user);
-        music.setTitle(finalTitle);
+        music.setTitle(resolvedTitle);
         music.setFileUrl(fileUrl);
         baseMusicRepo.save(music);
 
@@ -69,28 +66,19 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    /**
-     * 프롬프트(GPT 요약) 기반으로 기본 음악 재생성 (파일 없음, JSON 방식)
-     */
     @PostMapping(value = "/regenerate/from-summary", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CustomResponse<MusicRegenerateResponse>> regenerateFromSummary(
             @RequestBody MusicRegenerateRequest request) {
 
-        String title = (request.getTitle() == null || request.getTitle().isBlank())
-                ? "나의 노래" + (baseMusicRepo.countByUserId(request.getUserId()) + 1)
-                : request.getTitle();
-
         MusicRegenerateResponse response = musicService.regenerateFromPromptOnly(
                 request.getSessionId(),
                 request.getUserId(),
-                title
+                request.getPrompt(),
+                request.getTitle()
         );
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    /**
-     * 기존 기본 음악 기반으로 모션 음악 재생성
-     */
     @PostMapping("/{baseId}/motion/regenerate")
     public ResponseEntity<CustomResponse<MotionMusicRegenerateResponse>> regenerateMotionMusic(
             @PathVariable Integer baseId) {

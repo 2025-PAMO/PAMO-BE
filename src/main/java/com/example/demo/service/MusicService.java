@@ -4,17 +4,14 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.example.demo.domain.BaseMusic;
-import com.example.demo.domain.MusicSummary;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.User;
 import com.example.demo.dto.music.MotionMusicRegenerateResponse;
 import com.example.demo.dto.music.MusicRegenerateResponse;
 import com.example.demo.repository.BaseMusicRepository;
-import com.example.demo.repository.MusicSummaryRepository;
 import com.example.demo.repository.MotionMusicRepository;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -24,22 +21,17 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class MusicService {
 
-    @Autowired
-    private UserRepository userRepository;
-
+    private final UserRepository userRepository;
     private final AmazonS3 amazonS3;
     private final RestTemplate restTemplate;
     private final BaseMusicRepository baseMusicRepo;
-    private final MusicSummaryRepository summaryRepo;
     private final MotionMusicRepository motionMusicRepo;
 
     @Value("${cloud.aws.s3.bucket}")
@@ -48,9 +40,13 @@ public class MusicService {
     @Value("${fastapi.endpoint.generate}")
     private String fastApiUrl;
 
-    /**
-     * 프롬프트 + 허밍파일로 기본 음악 생성 & S3 업로드
-     */
+    private String generateDefaultTitle(Integer userId) {
+        long count = baseMusicRepo.findAll().stream()
+                .filter(m -> m.getUser().getId().equals(userId))
+                .count();
+        return "나의 노래 " + (count + 1);
+    }
+
     public String generateMusicAndUpload(String prompt, MultipartFile hummingFile) throws IOException {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("prompt", prompt);
@@ -75,38 +71,92 @@ public class MusicService {
 
         try (InputStream inputStream = new ByteArrayInputStream(audio)) {
             amazonS3.putObject(bucketName, key, inputStream, metadata);
-        } catch (Exception e) {
-            throw new RuntimeException("S3 업로드 실패", e);
         }
 
         return amazonS3.getUrl(bucketName, key).toString();
     }
 
-    /**
-     * 기존 기본 음악(BaseMusic) 기반으로 모션 음악 재생성
-     */
+    public MusicRegenerateResponse regenerateFromPromptOnly(String sessionId, Integer userId, String prompt, String title) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
+
+        BaseMusic baseMusic = baseMusicRepo.findBySessionId(sessionId)
+                .orElseThrow(() -> new RuntimeException("해당 세션의 기본 음악을 찾을 수 없습니다."));
+
+        String originalFileUrl = baseMusic.getFileUrl();
+        String key = originalFileUrl.substring(originalFileUrl.indexOf("music/"));
+
+        S3Object s3Object = amazonS3.getObject(bucketName, key);
+        byte[] audioBytes;
+        try (InputStream inputStream = s3Object.getObjectContent()) {
+            audioBytes = inputStream.readAllBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("기존 음악 S3 다운로드 실패", e);
+        }
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("prompt", prompt);
+        body.add("file", new ByteArrayResource(audioBytes) {
+            @Override
+            public String getFilename() {
+                return "input.wav";
+            }
+        });
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<byte[]> response = restTemplate.exchange(fastApiUrl, HttpMethod.POST, request, byte[].class);
+
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new RuntimeException("FastAPI 응답 실패");
+        }
+
+        byte[] newAudio = response.getBody();
+        String newKey = "music/" + UUID.randomUUID() + ".wav";
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(newAudio.length);
+        metadata.setContentType("audio/wav");
+
+        try (InputStream stream = new ByteArrayInputStream(newAudio)) {
+            amazonS3.putObject(bucketName, newKey, stream, metadata);
+        } catch (IOException e) {
+            throw new RuntimeException("S3 업로드 실패", e);
+        }
+
+        String fileUrl = amazonS3.getUrl(bucketName, newKey).toString();
+        String resolvedTitle = (title == null || title.trim().isEmpty()) ? generateDefaultTitle(userId) : title;
+
+        BaseMusic music = new BaseMusic();
+        music.setSessionId(sessionId);
+        music.setUser(user);
+        music.setTitle(resolvedTitle);
+        music.setFileUrl(fileUrl);
+
+        baseMusicRepo.save(music);
+
+        return new MusicRegenerateResponse(music.getId(), fileUrl, resolvedTitle);
+    }
+
     public MotionMusicRegenerateResponse regenerateMotionMusic(Integer baseMusicId) {
         BaseMusic baseMusic = baseMusicRepo.findById(baseMusicId)
                 .orElseThrow(() -> new RuntimeException("기본 음악이 존재하지 않습니다."));
 
-        MusicSummary summary = summaryRepo.findBySessionId(baseMusic.getSessionId())
-                .orElseThrow(() -> new RuntimeException("GPT 요약 없음"));
+        String prompt = "기본 음악 기반 생성";
 
-        String prompt = summary.getSummaryText();
         String originalFileUrl = baseMusic.getFileUrl();
-        String key = originalFileUrl.substring(originalFileUrl.indexOf("music/")); // music/xxx.wav
+        String key = originalFileUrl.substring(originalFileUrl.indexOf("music/"));
 
-        // S3에서 파일 다운로드
         S3Object s3Object = amazonS3.getObject(bucketName, key);
-        InputStream inputStream = s3Object.getObjectContent();
         byte[] audioBytes;
-        try {
+        try (InputStream inputStream = s3Object.getObjectContent()) {
             audioBytes = inputStream.readAllBytes();
         } catch (IOException e) {
             throw new RuntimeException("S3 파일 다운로드 실패", e);
         }
 
-        // FastAPI 호출
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
@@ -126,7 +176,6 @@ public class MusicService {
             throw new RuntimeException("FastAPI 응답 실패");
         }
 
-        // S3 업로드
         byte[] newAudio = response.getBody();
         String newKey = "motion/" + UUID.randomUUID() + ".wav";
 
@@ -142,64 +191,15 @@ public class MusicService {
 
         String newFileUrl = amazonS3.getUrl(bucketName, newKey).toString();
 
-        // DB 저장
         MotionMusic motionMusic = new MotionMusic();
         motionMusic.setBaseMusic(baseMusic);
+        motionMusic.setUser(baseMusic.getUser());
+        motionMusic.setSessionId(baseMusic.getSessionId());
         motionMusic.setFileUrl(newFileUrl);
+        motionMusic.setBaseTitle(baseMusic.getTitle());
+
         motionMusicRepo.save(motionMusic);
 
-        return new MotionMusicRegenerateResponse(motionMusic.getId(), newFileUrl);
-    }
-
-    /**
-     * 프롬프트 기반으로 기본 음악 처음부터 다시 생성
-     */
-    public MusicRegenerateResponse regenerateFromPromptOnly(String sessionId, Integer userId, String title) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
-
-        MusicSummary summary = summaryRepo.findBySessionId(sessionId)
-                .orElseThrow(() -> new RuntimeException("GPT 요약 없음"));
-
-        String prompt = summary.getSummaryText();
-
-        // FastAPI 호출
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("prompt", prompt);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-        ResponseEntity<byte[]> response = restTemplate.exchange(fastApiUrl, HttpMethod.POST, request, byte[].class);
-
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new RuntimeException("FastAPI 응답 실패");
-        }
-
-        byte[] newAudio = response.getBody();
-        String key = "music/" + UUID.randomUUID() + ".wav";
-
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(newAudio.length);
-        metadata.setContentType("audio/wav");
-
-        try (InputStream stream = new ByteArrayInputStream(newAudio)) {
-            amazonS3.putObject(bucketName, key, stream, metadata);
-        } catch (IOException e) {
-            throw new RuntimeException("S3 업로드 실패", e);
-        }
-
-        String fileUrl = amazonS3.getUrl(bucketName, key).toString();
-
-        BaseMusic music = new BaseMusic();
-        music.setSessionId(sessionId);
-        music.setUser(user);
-        music.setTitle(title);
-        music.setFileUrl(fileUrl);
-
-        baseMusicRepo.save(music);
-
-        return new MusicRegenerateResponse(music.getId(), fileUrl, title);
+        return new MotionMusicRegenerateResponse(motionMusic.getId(), newFileUrl, baseMusic.getTitle());
     }
 }
