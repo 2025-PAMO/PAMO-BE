@@ -8,5 +8,6 @@ import lombok.Setter;
 public class MusicRegenerateRequest {
     private String sessionId;
     private Integer userId;
+    private String prompt;
     private String title;
 }
