@@ -1,4 +1,5 @@
-package com.example.demo.dto.motionMusic;
+package com.example.demo.dto.myPage;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +10,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MotionMusicDTO {
-    private Integer motionMusicId;
+public class BaseMusicDTO {
+    private Integer baseMusicId;
     private String title;
     private String artist;
-    private String coverImageUrl;
-    private int likeCount;
-    private boolean visibility;
+    private String musicFileUrl;
+    private boolean isBookmarked;
 }

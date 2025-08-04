@@ -1,6 +1,6 @@
-package com.example.demo.dto.myMusic;
+package com.example.demo.dto.myPage;
 
-import com.example.demo.dto.user.UserDto;
+import com.example.demo.dto.user.UserProfileDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MyMusicResponseDTO {
-    private UserDto user;
+    private UserProfileDTO user;
     private String type;
     private List<?> myMusicList;  // MotionMusicDTO 또는 BaseMusicDTO
 }

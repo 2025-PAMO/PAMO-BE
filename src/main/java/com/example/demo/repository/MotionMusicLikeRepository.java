@@ -25,4 +25,17 @@ public interface MotionMusicLikeRepository extends JpaRepository<MotionMusicLike
             Pageable pageable
     );
 
+    // 사용자가 좋아요한 시간(l.createdAt) 기준 과거순, 공개된 음악 전부
+    @Query("""
+        SELECT m
+        FROM MotionMusicLike l
+        JOIN l.motionMusic m
+        WHERE l.user.id = :userId
+          AND m.visibility = true
+        ORDER BY l.createdAt ASC
+    """)
+    List<MotionMusic> findAllUserLikedVisibleMusicOrderByLikedAtAsc(
+            @Param("userId") Integer userId
+    );
+
 }
