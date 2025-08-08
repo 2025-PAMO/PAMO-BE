@@ -78,6 +78,49 @@ public class DataInitializer implements CommandLineRunner {
         BaseMusicLike baseLike2 = newBaseMusicLike(user2, base2, "base_like2");
         baseMusicLikeRepository.saveAll(List.of(baseLike1, baseLike2));
 
+        // 소셜 로그인한 사용자에게 연결할 더미데이터 생성
+        User dummyUser = new User();
+        dummyUser.setUserId("dummy_4");
+        dummyUser.setNickname("DummyUser4");
+        dummyUser.setEmail("dummy4@test.com");
+        dummyUser.setJoinType("KAKAO");
+        dummyUser.setProviderType(ProviderType.KAKAO);
+        dummyUser.setRoleType(RoleType.USER);
+        dummyUser.setEmailVerifiedYn("Y");
+        dummyUser.setCreatedAt(LocalDateTime.now());
+        dummyUser.setModifiedAt(LocalDateTime.now());
+        userRepository.save(dummyUser);
+
+        // 2. BaseMusic 더미 생성
+        BaseMusic base4 = newBaseMusic("Test Base 4-A", "https://example.com/4_base_a.mp3", dummyUser, "session_4_a");
+        BaseMusic base5 = newBaseMusic("Test Base 4-B", "https://example.com/4_base_b.mp3", dummyUser, "session_4_b");
+        baseMusicRepository.saveAll(List.of(base4, base5));
+        baseMusicRepository.flush();
+
+        // 3. MotionMusic 더미 생성
+        List<MotionMusic> motions = List.of(
+                newMotionMusic("User4 Track A", dummyUser, base4, 120, true, "https://example.com/cover_4_a.jpg", "session4_a"),
+                newMotionMusic("User4 Track B", dummyUser, base5, 95, true, "https://example.com/cover_4_b.jpg", "session4_b"),
+                newMotionMusic("User4 Track C", dummyUser, base4, 75, false, "https://example.com/cover_4_c.jpg", "session4_c")
+        );
+        motionMusicRepository.saveAll(motions);
+
+        // 4. MotionMusicLike 생성
+        List<MotionMusicLike> likes2 = List.of(
+                newMotionLike(dummyUser, musics.get(1), "session1"),
+                newMotionLike(dummyUser, musics.get(0), "session2"),
+                newMotionLike(dummyUser, musics.get(4), "session3")
+        );
+        motionMusicLikeRepository.saveAll(likes2);
+
+
+        // 6. BaseMusicLike 추가
+        BaseMusicLike baseLike3 = newBaseMusicLike(dummyUser, base1, "base_like3");
+        BaseMusicLike baseLike4 = newBaseMusicLike(dummyUser, base2, "base_like4");
+        baseMusicLikeRepository.saveAll(List.of(baseLike3, baseLike4));
+
+        System.out.println("✅ user_id=9999 테스트용 더미 음악 데이터 생성 완료");
+
         System.out.println("✅ 예시 데이터 생성 완료");
     }
 

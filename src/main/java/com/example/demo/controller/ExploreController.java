@@ -4,14 +4,15 @@ import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.dto.explore.ExploreResponseDTO;
 import com.example.demo.dto.explore.MusicDebugDTO;
+import com.example.demo.oauth.entity.UserPrincipal;
 import com.example.demo.repository.MotionMusicRepository;
 import com.example.demo.service.ExploreService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,9 +25,12 @@ public class ExploreController {
     private final MotionMusicRepository motionMusicRepository;
 
     @GetMapping
-    public CustomResponse<ExploreResponseDTO> showExplore(@RequestParam(required = false) Integer id) {
-        if (id != null) {
-            return CustomResponse.onSuccess(exploreService.getExplorePage(id));
+    public CustomResponse<ExploreResponseDTO> showExplore() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof UserPrincipal userPrincipal) {
+            return CustomResponse.onSuccess(exploreService.getExplorePage(userPrincipal.getId()));
         } else {
             return CustomResponse.onSuccess(exploreService.getExplorePage());
         }

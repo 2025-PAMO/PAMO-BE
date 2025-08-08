@@ -109,25 +109,37 @@ public class MyPageService {
     }
 
     @Transactional
-    public void updateVisibility(Integer musicId, Boolean visibility) {
+    public void updateVisibility(Integer userId, Integer musicId, Boolean visibility) {
         MotionMusic motionMusic = motionMusicRepository.findById(musicId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
+
+        if (!motionMusic.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("해당 모션 음악에 대한 수정 권한이 없습니다.");
+        }
 
         motionMusic.setVisibility(visibility);
     }
 
     @Transactional
-    public void updateMotionMusicTitle(Integer id, String newTitle) {
+    public void updateMotionMusicTitle(Integer userId, Integer id, String newTitle) {
         MotionMusic motionMusic = motionMusicRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
+
+        if (!motionMusic.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("해당 모션 음악에 대한 수정 권한이 없습니다.");
+        }
 
         motionMusic.setTitle(newTitle);
     }
 
     @Transactional
-    public void updateBaseMusicTitle(Integer id, String newTitle) {
+    public void updateBaseMusicTitle(Integer userId, Integer id, String newTitle) {
         BaseMusic baseMusic = baseMusicRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 기본 음악을 찾을 수 없습니다."));
+
+        if (!baseMusic.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("해당 기본 음악에 대한 수정 권한이 없습니다.");
+        }
 
         baseMusic.setTitle(newTitle);
     }
