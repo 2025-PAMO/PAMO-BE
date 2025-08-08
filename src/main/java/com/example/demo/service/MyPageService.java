@@ -9,11 +9,14 @@ import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.dto.user.UserProfileDTO;
 import com.example.demo.repository.*;
 
+import com.example.demo.util.S3Uploader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +30,7 @@ public class MyPageService {
     private final BaseMusicRepository baseMusicRepository;
     private final MotionMusicLikeRepository motionMusicLikeRepository;
     private final BaseMusicLikeRepository baseMusicLikeRepository;
+    private final S3Uploader s3Uploader;
 
     @Transactional(readOnly = true)
     public MyMusicResponseDTO getMyMusic(Integer userId, String type) {
@@ -143,4 +147,12 @@ public class MyPageService {
 
         baseMusic.setTitle(newTitle);
     }
+
+    @Transactional
+    public void updateProfileImage(Integer userId, MultipartFile profileImage) throws IOException {
+        User user = getUserOrThrow(userId);
+        String imageUrl = s3Uploader.upload(profileImage, "profile");
+        user.setProfileImage(imageUrl);
+    }
+
 }

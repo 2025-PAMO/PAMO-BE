@@ -7,6 +7,9 @@ import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.service.MyPageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 import static com.example.demo.util.SecurityUtil.getCurrentUserId;
 
@@ -62,6 +65,13 @@ public class MyPageController {
         Integer userId = getCurrentUserId();
         myPageService.updateBaseMusicTitle(userId, musicId, requestDTO.getTitle());
         return CustomResponse.onSuccess("기본 음악 제목이 성공적으로 수정되었습니다.");
+    }
+
+    @PatchMapping("/profile-image")
+    public CustomResponse<String> updateProfileImage(@RequestParam("profileImage") MultipartFile profileImage) throws IOException {
+        Integer userId = getCurrentUserId();
+        myPageService.updateProfileImage(userId, profileImage);
+        return CustomResponse.onSuccess("사용자의 프로필 사진이 성공적으로 수정되었습니다.");
     }
 
 }
