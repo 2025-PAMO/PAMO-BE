@@ -155,4 +155,10 @@ public class MyPageService {
         user.setProfileImage(imageUrl);
     }
 
+    @Transactional
+    public void updateNickname (Integer userId, String nickname) {
+        User user = getUserOrThrow(userId);
+        user.setNickname(nickname);
+    }
+
 }

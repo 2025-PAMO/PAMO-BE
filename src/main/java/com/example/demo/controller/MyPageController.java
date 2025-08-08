@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.apiPayload.CustomResponse;
+import com.example.demo.dto.myPage.NicknameRequestDTO;
 import com.example.demo.dto.myPage.TitleUpdateRequestDTO;
 import com.example.demo.dto.myPage.VisibilityUpdateRequestDTO;
 import com.example.demo.dto.myPage.MyMusicResponseDTO;
@@ -72,6 +73,13 @@ public class MyPageController {
         Integer userId = getCurrentUserId();
         myPageService.updateProfileImage(userId, profileImage);
         return CustomResponse.onSuccess("사용자의 프로필 사진이 성공적으로 수정되었습니다.");
+    }
+
+    @PatchMapping("/nickname")
+    public CustomResponse<String> updateNickname(@RequestBody NicknameRequestDTO requestDTO) {
+        Integer userId = getCurrentUserId();
+        myPageService.updateNickname(userId, requestDTO.getNickname());
+        return CustomResponse.onSuccess("사용자의 닉네임이 성공적으로 수정되었습니다.");
     }
 
 }
