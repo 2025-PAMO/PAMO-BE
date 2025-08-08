@@ -50,5 +50,5 @@ public class BaseMusicService {
             throw new CustomException(MusicErrorCode.NO_PERMISSION);
         }
     }
-    
+
 }

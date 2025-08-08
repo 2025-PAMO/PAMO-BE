@@ -4,6 +4,7 @@ import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.User;
 import com.example.demo.dto.myPage.BaseMusicDTO;
+import com.example.demo.dto.myPage.LibraryBaseMusicDTO;
 import com.example.demo.dto.myPage.MotionMusicDTO;
 import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.dto.user.UserProfileDTO;
@@ -38,7 +39,7 @@ public class MyPageService {
                             .collect(Collectors.toList()));
             case "base" -> buildMyMusicResponse(userProfile, "base",
                     baseMusicRepository.findByUser(user).stream()
-                            .map(b -> toBaseMusicDTO(b, userId))
+                            .map(b -> toMyMusicBaseMusicDTO(b, userId))
                             .collect(Collectors.toList()));
             default -> throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
         };
@@ -56,7 +57,7 @@ public class MyPageService {
                             .collect(Collectors.toList()));
             case "base" -> buildMyMusicResponse(userProfile, "base",
                     baseMusicLikeRepository.findAllUserLikedBaseMusicOrderByLikedAtAsc(userId).stream()
-                            .map(b -> toBaseMusicDTO(b, userId))
+                            .map(b -> toLibraryBaseMusicDTO(b, userId))
                             .collect(Collectors.toList()));
             default -> throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
         };
@@ -86,8 +87,19 @@ public class MyPageService {
                 .build();
     }
 
-    private BaseMusicDTO toBaseMusicDTO(BaseMusic b, Integer viewerUserId) {
+    private BaseMusicDTO toMyMusicBaseMusicDTO(BaseMusic b, Integer viewerUserId) {
         return BaseMusicDTO.builder()
+                .baseMusicId(b.getId())
+                .title(b.getTitle())
+                .artist(b.getUser().getNickname())
+                .musicFileUrl(b.getFileUrl())
+                .isBookmarked(b.getLikes().stream().anyMatch(like -> like.getUser().getId().equals(viewerUserId)))
+                .deletable(b.getDeletable())
+                .build();
+    }
+
+    private LibraryBaseMusicDTO toLibraryBaseMusicDTO(BaseMusic b, Integer viewerUserId) {
+        return LibraryBaseMusicDTO.builder()
                 .baseMusicId(b.getId())
                 .title(b.getTitle())
                 .artist(b.getUser().getNickname())
