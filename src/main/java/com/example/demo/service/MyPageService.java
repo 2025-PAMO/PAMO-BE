@@ -8,15 +8,10 @@ import com.example.demo.dto.myPage.MotionMusicDTO;
 import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.dto.user.UserProfileDTO;
 import com.example.demo.repository.*;
-
-import com.example.demo.util.S3Uploader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +25,6 @@ public class MyPageService {
     private final BaseMusicRepository baseMusicRepository;
     private final MotionMusicLikeRepository motionMusicLikeRepository;
     private final BaseMusicLikeRepository baseMusicLikeRepository;
-    private final S3Uploader s3Uploader;
 
     @Transactional(readOnly = true)
     public MyMusicResponseDTO getMyMusic(Integer userId, String type) {
@@ -68,7 +62,7 @@ public class MyPageService {
         };
     }
 
-    private User getUserOrThrow(Integer userId) {
+    public User getUserOrThrow(Integer userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
     }
@@ -110,55 +104,6 @@ public class MyPageService {
                 .email(user.getEmail())
                 .profileImage(user.getProfileImage())
                 .build();
-    }
-
-    @Transactional
-    public void updateVisibility(Integer userId, Integer musicId, Boolean visibility) {
-        MotionMusic motionMusic = motionMusicRepository.findById(musicId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
-
-        if (!motionMusic.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("해당 모션 음악에 대한 수정 권한이 없습니다.");
-        }
-
-        motionMusic.setVisibility(visibility);
-    }
-
-    @Transactional
-    public void updateMotionMusicTitle(Integer userId, Integer id, String newTitle) {
-        MotionMusic motionMusic = motionMusicRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
-
-        if (!motionMusic.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("해당 모션 음악에 대한 수정 권한이 없습니다.");
-        }
-
-        motionMusic.setTitle(newTitle);
-    }
-
-    @Transactional
-    public void updateBaseMusicTitle(Integer userId, Integer id, String newTitle) {
-        BaseMusic baseMusic = baseMusicRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 기본 음악을 찾을 수 없습니다."));
-
-        if (!baseMusic.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("해당 기본 음악에 대한 수정 권한이 없습니다.");
-        }
-
-        baseMusic.setTitle(newTitle);
-    }
-
-    @Transactional
-    public void updateProfileImage(Integer userId, MultipartFile profileImage) throws IOException {
-        User user = getUserOrThrow(userId);
-        String imageUrl = s3Uploader.upload(profileImage, "profile");
-        user.setProfileImage(imageUrl);
-    }
-
-    @Transactional
-    public void updateNickname (Integer userId, String nickname) {
-        User user = getUserOrThrow(userId);
-        user.setNickname(nickname);
     }
 
 }

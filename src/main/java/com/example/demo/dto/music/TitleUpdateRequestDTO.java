@@ -1,4 +1,4 @@
-package com.example.demo.dto.myPage;
+package com.example.demo.dto.music;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class NicknameRequestDTO {
-    private String nickname;
+public class TitleUpdateRequestDTO {
+    private String title;
 }

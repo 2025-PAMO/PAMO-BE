@@ -1,4 +1,4 @@
-package com.example.demo.dto.myPage;
+package com.example.demo.dto.music;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

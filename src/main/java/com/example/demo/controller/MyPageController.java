@@ -1,11 +1,10 @@
 package com.example.demo.controller;
 
 import com.example.demo.apiPayload.CustomResponse;
-import com.example.demo.dto.myPage.NicknameRequestDTO;
-import com.example.demo.dto.myPage.TitleUpdateRequestDTO;
-import com.example.demo.dto.myPage.VisibilityUpdateRequestDTO;
+import com.example.demo.dto.user.NicknameRequestDTO;
 import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.service.MyPageService;
+import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +18,7 @@ import static com.example.demo.util.SecurityUtil.getCurrentUserId;
 @RequiredArgsConstructor
 public class MyPageController {
     private final MyPageService myPageService;
+    private final UserService userService;
 
     @GetMapping("/musics")
     public CustomResponse<MyMusicResponseDTO> getMyMusic(
@@ -38,47 +38,17 @@ public class MyPageController {
         return CustomResponse.onSuccess(result);
     }
 
-    @PatchMapping("/motion-music/{id}/visibility")
-    public CustomResponse<String> updateVisibility(
-            @PathVariable("id") Integer musicId,
-            @RequestBody VisibilityUpdateRequestDTO requestDTO
-    ){
-        Integer userId = getCurrentUserId();
-        myPageService.updateVisibility(userId, musicId, requestDTO.getVisibility());
-        return CustomResponse.onSuccess("모션 음악 공개 여부가 성공적으로 변경되었습니다.");
-    }
-
-    @PatchMapping("/motion-music/{id}/title")
-    public CustomResponse<String> updateMotionMusicTitle(
-            @PathVariable("id") Integer musicId,
-            @RequestBody TitleUpdateRequestDTO requestDTO
-    ){
-        Integer userId = getCurrentUserId();
-        myPageService.updateMotionMusicTitle(userId, musicId, requestDTO.getTitle());
-        return CustomResponse.onSuccess("모션 음악 제목이 성공적으로 수정되었습니다.");
-    }
-
-    @PatchMapping("/base-music/{id}/title")
-    public CustomResponse<String> updateBaseMusicTitle(
-            @PathVariable("id") Integer musicId,
-            @RequestBody TitleUpdateRequestDTO requestDTO
-    ){
-        Integer userId = getCurrentUserId();
-        myPageService.updateBaseMusicTitle(userId, musicId, requestDTO.getTitle());
-        return CustomResponse.onSuccess("기본 음악 제목이 성공적으로 수정되었습니다.");
-    }
-
     @PatchMapping("/profile-image")
     public CustomResponse<String> updateProfileImage(@RequestParam("profileImage") MultipartFile profileImage) throws IOException {
         Integer userId = getCurrentUserId();
-        myPageService.updateProfileImage(userId, profileImage);
+        userService.updateProfileImage(userId, profileImage);
         return CustomResponse.onSuccess("사용자의 프로필 사진이 성공적으로 수정되었습니다.");
     }
 
     @PatchMapping("/nickname")
     public CustomResponse<String> updateNickname(@RequestBody NicknameRequestDTO requestDTO) {
         Integer userId = getCurrentUserId();
-        myPageService.updateNickname(userId, requestDTO.getNickname());
+        userService.updateNickname(userId, requestDTO.getNickname());
         return CustomResponse.onSuccess("사용자의 닉네임이 성공적으로 수정되었습니다.");
     }
 

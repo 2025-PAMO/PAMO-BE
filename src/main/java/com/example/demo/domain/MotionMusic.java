@@ -45,7 +45,7 @@ public class MotionMusic {
 
     private Boolean visibility;
 
-    @OneToMany(mappedBy = "motionMusic", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "motionMusic", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MotionMusicLike> likes;
 
 
