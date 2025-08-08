@@ -34,4 +34,12 @@ public class MotionMusicController {
         motionMusicService.updateMotionMusicTitle(userId, musicId, requestDTO.getTitle());
         return CustomResponse.onSuccess("모션 음악 제목이 성공적으로 수정되었습니다.");
     }
+
+    @DeleteMapping("/{id}")
+    public CustomResponse<String> deleteMotionMusic(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        motionMusicService.deleteMotionMusic(userId, musicId);
+        return CustomResponse.onSuccess("모션 음악이 성공적으로 삭제되었습니다.");
+    }
+
 }

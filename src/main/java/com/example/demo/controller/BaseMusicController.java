@@ -23,4 +23,12 @@ public class BaseMusicController {
         baseMusicService.updateBaseMusicTitle(userId, musicId, requestDTO.getTitle());
         return CustomResponse.onSuccess("기본 음악 제목이 성공적으로 수정되었습니다.");
     }
+
+    @DeleteMapping("{id}")
+    public CustomResponse<String> deleteBaseMusic(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        baseMusicService.deleteBaseMusic(userId, musicId);
+        return CustomResponse.onSuccess("기본 음악이 성공적으로 삭제되었습니다.");
+    }
+
 }

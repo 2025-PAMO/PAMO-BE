@@ -1,11 +1,16 @@
 package com.example.demo.service;
 
+import com.example.demo.apiPayload.code.MusicErrorCode;
+import com.example.demo.apiPayload.exception.CustomException;
+import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -15,26 +20,47 @@ public class MotionMusicService {
 
     @Transactional
     public void updateVisibility(Integer userId, Integer musicId, Boolean visibility) {
-        MotionMusic motionMusic = motionMusicRepository.findById(musicId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
+        MotionMusic motionMusic = getMotionMusicOrThrow(musicId);
 
-        if (!motionMusic.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("해당 모션 음악에 대한 수정 권한이 없습니다.");
-        }
+        validateOwnership(motionMusic.getUser().getId(), userId);
 
         motionMusic.setVisibility(visibility);
     }
 
     @Transactional
     public void updateMotionMusicTitle(Integer userId, Integer id, String newTitle) {
-        MotionMusic motionMusic = motionMusicRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 모션 음악을 찾을 수 없습니다."));
+        MotionMusic motionMusic = getMotionMusicOrThrow(id);
 
-        if (!motionMusic.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("해당 모션 음악에 대한 수정 권한이 없습니다.");
-        }
+        validateOwnership(motionMusic.getUser().getId(), userId);
 
         motionMusic.setTitle(newTitle);
+    }
+
+    @Transactional
+    public void deleteMotionMusic(Integer userId, Integer musicId) {
+        MotionMusic motionMusic = getMotionMusicOrThrow(musicId);
+
+        validateOwnership(motionMusic.getUser().getId(), userId);
+
+        BaseMusic baseMusic = motionMusic.getBaseMusic();
+
+        motionMusicRepository.delete(motionMusic);
+
+        // 연결된 BaseMusic의 다른 모션 음악이 있는지 확인
+        List<MotionMusic> remaining = motionMusicRepository.findByBaseMusicId(baseMusic.getId());
+        if (remaining.isEmpty()) baseMusic.setDeletable(true);
+
+    }
+
+    private MotionMusic getMotionMusicOrThrow(Integer motionMusicId) {
+        return motionMusicRepository.findById(motionMusicId)
+                .orElseThrow(() -> new CustomException(MusicErrorCode.MUSIC_NOT_FOUND));
+    }
+
+    private void validateOwnership(Integer ownerId, Integer currentUserId) {
+        if (!ownerId.equals(currentUserId)) {
+            throw new CustomException(MusicErrorCode.NO_PERMISSION);
+        }
     }
 
 }
