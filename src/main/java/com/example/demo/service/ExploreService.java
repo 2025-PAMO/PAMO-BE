@@ -60,7 +60,7 @@ public class ExploreService {
 
     // 사용자가 좋아요한 시점 기준 최신 3개
     private List<MotionMusic> getUserRecentlyLikedMusics(Integer userId) {
-        return motionMusicLikeRepository.findUserLikedVisibleMusicOrderByLikedAtDesc(
+        return motionMusicLikeRepository.findUserLikedVisibleOrOwnedPrivateOrderByLikedAtDesc(
                 userId,
                 PageRequest.of(0, 3)
         );

@@ -11,30 +11,30 @@ import java.util.List;
 
 public interface MotionMusicLikeRepository extends JpaRepository<MotionMusicLike, Integer> {
 
-    // 사용자가 좋아요한 시간(l.createdAt) 기준 최신순, 공개된 음악만, 상위 N개
+    // 둘러보기(좋아요한 음악 최신 3개에 사용): 내가 좋아요한 공개 모션 음악 + 내가 만든 비공개 모션 음악 중 내가 좋아요한 음악, 최신순 + 페이지네이션
     @Query("""
         SELECT m
         FROM MotionMusicLike l
         JOIN l.motionMusic m
         WHERE l.user.id = :userId
-          AND m.visibility = true
+          AND (m.visibility = true OR m.user.id = :userId)
         ORDER BY l.createdAt DESC
     """)
-    List<MotionMusic> findUserLikedVisibleMusicOrderByLikedAtDesc(
+    List<MotionMusic> findUserLikedVisibleOrOwnedPrivateOrderByLikedAtDesc(
             @Param("userId") Integer userId,
             Pageable pageable
     );
 
-    // 사용자가 좋아요한 시간(l.createdAt) 기준 과거순, 공개된 음악 전부
+    // 라이브러리: 내가 좋아요한 공개곡 + 내가 만든 비공개곡(내가 좋아요한 것만), 과거순
     @Query("""
         SELECT m
         FROM MotionMusicLike l
         JOIN l.motionMusic m
         WHERE l.user.id = :userId
-          AND m.visibility = true
+          AND (m.visibility = true OR m.user.id = :userId)
         ORDER BY l.createdAt ASC
     """)
-    List<MotionMusic> findAllUserLikedVisibleMusicOrderByLikedAtAsc(
+    List<MotionMusic> findAllUserLikedVisibleOrOwnedPrivateOrderByLikedAtAsc(
             @Param("userId") Integer userId
     );
 

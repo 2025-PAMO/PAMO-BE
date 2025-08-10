@@ -52,7 +52,7 @@ public class MyPageService {
 
         return switch (type.toLowerCase()) {
             case "motion" -> buildMyMusicResponse(userProfile, "motion",
-                    motionMusicLikeRepository.findAllUserLikedVisibleMusicOrderByLikedAtAsc(userId).stream()
+                    motionMusicLikeRepository.findAllUserLikedVisibleOrOwnedPrivateOrderByLikedAtAsc(userId).stream()
                             .map(m -> toMotionMusicDTO(m, m.getUser().getNickname()))
                             .collect(Collectors.toList()));
             case "base" -> buildMyMusicResponse(userProfile, "base",
