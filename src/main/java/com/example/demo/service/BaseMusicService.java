@@ -62,6 +62,14 @@ public class BaseMusicService {
         }
     }
 
+    @Transactional
+    public void unbookmark(Integer userId, Integer baseMusicId) {
+        getBaseMusicOrThrow(baseMusicId);
+
+        baseMusicLikeRepository.deleteByUserIdAndBaseMusicId(userId, baseMusicId);
+    }
+
+
     private BaseMusic getBaseMusicOrThrow(Integer baseMusicId) {
         return baseMusicRepository.findById(baseMusicId)
                 .orElseThrow(() -> new CustomException(MusicErrorCode.MUSIC_NOT_FOUND));

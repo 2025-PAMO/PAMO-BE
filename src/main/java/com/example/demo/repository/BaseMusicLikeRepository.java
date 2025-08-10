@@ -22,4 +22,6 @@ public interface BaseMusicLikeRepository extends JpaRepository<BaseMusicLike, In
 
     boolean existsByUserIdAndBaseMusicId(Integer userId, Integer baseMusicId);
 
+    void deleteByUserIdAndBaseMusicId(Integer userId, Integer baseMusicId);
+
 }

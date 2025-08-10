@@ -38,5 +38,11 @@ public class BaseMusicController {
         return CustomResponse.onSuccess("기본 음악을 북마크에 추가했습니다.");
     }
 
+    @DeleteMapping("/{id}/bookmark")
+    public CustomResponse<String> unbookmark(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        baseMusicService.unbookmark(userId, musicId);
+        return CustomResponse.onSuccess("기본 음악 북마크가 해제되었습니다.");
+    }
 
 }
