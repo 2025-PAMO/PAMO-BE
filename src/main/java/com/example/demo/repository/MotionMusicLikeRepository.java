@@ -39,5 +39,6 @@ public interface MotionMusicLikeRepository extends JpaRepository<MotionMusicLike
     );
 
     boolean existsByUserIdAndMotionMusicId(Integer userId, Integer motionMusicId);
+    void deleteByUserIdAndMotionMusicId(Integer userId, Integer motionMusicId);
 
 }

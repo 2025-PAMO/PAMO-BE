@@ -43,9 +43,16 @@ public class MotionMusicController {
     }
 
     @PutMapping("/{id}/like")
-    public CustomResponse<String> like(@PathVariable Integer id) {
+    public CustomResponse<String> like(@PathVariable("id") Integer id) {
         motionMusicService.like(getCurrentUserId(), id);
         return CustomResponse.onSuccess("모션 음악을 성공적으로 좋아요 목록에 추가했습니다.");
+    }
+
+    @DeleteMapping("/{id}/like")
+    public CustomResponse<String> unlike(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        motionMusicService.unlike(userId, musicId);
+        return CustomResponse.onSuccess("모션 음악을 성공적으로 좋야요 목록에서 삭제했습니다.");
     }
 
 }

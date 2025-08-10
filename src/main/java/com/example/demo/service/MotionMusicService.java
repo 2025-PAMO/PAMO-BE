@@ -80,6 +80,13 @@ public class MotionMusicService {
         }
     }
 
+    @Transactional
+    public void unlike(Integer userId, Integer motionMusicId) {
+        getMotionMusicOrThrow(motionMusicId);
+        getUserOrThrow(userId);
+        motionMusicLikeRepository.deleteByUserIdAndMotionMusicId(userId, motionMusicId);
+    }
+
 
     private MotionMusic getMotionMusicOrThrow(Integer motionMusicId) {
         return motionMusicRepository.findById(motionMusicId)
