@@ -42,4 +42,10 @@ public class MotionMusicController {
         return CustomResponse.onSuccess("모션 음악이 성공적으로 삭제되었습니다.");
     }
 
+    @PutMapping("/{id}/like")
+    public CustomResponse<String> like(@PathVariable Integer id) {
+        motionMusicService.like(getCurrentUserId(), id);
+        return CustomResponse.onSuccess("모션 음악을 성공적으로 좋아요 목록에 추가했습니다.");
+    }
+
 }

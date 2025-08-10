@@ -38,4 +38,6 @@ public interface MotionMusicLikeRepository extends JpaRepository<MotionMusicLike
             @Param("userId") Integer userId
     );
 
+    boolean existsByUserIdAndMotionMusicId(Integer userId, Integer motionMusicId);
+
 }

@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.apiPayload.code.GeneralErrorCode;
+import com.example.demo.apiPayload.exception.CustomException;
 import com.example.demo.domain.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.util.S3Uploader;
@@ -32,7 +34,7 @@ public class UserService {
 
     public User getUserOrThrow(Integer userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(GeneralErrorCode.USER_NOT_FOUND));
     }
 
 }

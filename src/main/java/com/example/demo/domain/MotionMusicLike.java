@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "motion_music_like")
+@Table(name = "motion_music_like",  uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "motion_music_id"}))
 public class MotionMusicLike {
 
     @Id
