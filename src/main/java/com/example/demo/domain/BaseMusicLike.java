@@ -4,14 +4,16 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.sql.Time;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "base_music_like")
+@Table(name = "base_music_like", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id","base_music_id"}))
 public class BaseMusicLike {
 
     @Id
@@ -26,8 +28,9 @@ public class BaseMusicLike {
     @JoinColumn(name = "base_music_id", nullable = false)
     private BaseMusic baseMusic;
 
-    @Column(name = "created_at", columnDefinition = "TIME", insertable = false, updatable = false)
-    private Time createdAt;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(name = "session_id", length = 64)
     private String sessionId;

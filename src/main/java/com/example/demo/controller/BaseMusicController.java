@@ -31,4 +31,12 @@ public class BaseMusicController {
         return CustomResponse.onSuccess("기본 음악이 성공적으로 삭제되었습니다.");
     }
 
+    @PutMapping("/{id}/bookmark")
+    public CustomResponse<String> bookmark(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        baseMusicService.bookmark(userId, musicId);
+        return CustomResponse.onSuccess("기본 음악을 북마크에 추가했습니다.");
+    }
+
+
 }
