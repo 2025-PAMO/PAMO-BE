@@ -32,6 +32,10 @@ public class BaseMusic {
     @Column(name = "file_url")
     private String fileUrl;
 
+    // 소프트 삭제
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @Column(name = "deletable")
     private Boolean deletable;
 

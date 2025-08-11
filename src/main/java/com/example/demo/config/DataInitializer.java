@@ -5,6 +5,7 @@ import com.example.demo.oauth.entity.ProviderType;
 import com.example.demo.oauth.entity.RoleType;
 import com.example.demo.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ import java.util.List;
 //// 테스트용 데이터 생성 코드
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class DataInitializer implements CommandLineRunner {
 
     private final MotionMusicRepository motionMusicRepository;
@@ -25,6 +27,12 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws InterruptedException {
+        // 이미 데이터가 있으면 스킵
+        if (isAlreadySeeded()) {
+            log.info("✅ Seed skipped: DB에 기존 데이터가 있어 시드를 수행하지 않습니다.");
+            return;
+        }
+
         // 1. 사용자 생성
         User user1 = newUser("alice_kakao_id", "Alice", "https://example.com/alice.png", "KAKAO");
         User user2 = newUser("bob_google_id", "Bob", "https://example.com/bob.png", "GOOGLE");
@@ -125,6 +133,14 @@ public class DataInitializer implements CommandLineRunner {
 
         System.out.println("✅ 예시 데이터 생성 완료");
     }
+
+    private boolean isAlreadySeeded() {
+        // 기준 테이블 하나만 봐도 충분. 더 엄격히 하고 싶으면 각 테이블 count를 함께 확인하세요.
+        return userRepository.count() > 0L
+                || baseMusicRepository.count() > 0L
+                || motionMusicRepository.count() > 0L;
+    }
+
 
     private User newUser(String userId, String nickname, String profileImage, String joinType) {
         User user = new User();
