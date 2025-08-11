@@ -1,0 +1,26 @@
+# VCS
+.git
+.gitignore
+
+# Build / caches
+build/
+**/build/
+.gradle/
+out/
+**/out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# 🔐 Secrets
+.env
+.env.*
+*.local
+application-local.yml
+application-*.local.yml

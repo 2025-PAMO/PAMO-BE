@@ -11,6 +11,8 @@ import com.example.demo.repository.BaseMusicRepository;
 import com.example.demo.repository.MusicSummaryRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.MusicService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+@Tag(name = "음악 API", description = "생성한 요약을 바탕으로 기본음악을 생성합니다.")
 @RestController
 @RequestMapping("/music")
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class MusicController {
     private final UserRepository userRepository;
     private final MusicService musicService;
 
+    @Operation(summary = "음악 생성하기", description = "허밍데이터를 기반으로 한 데이터를 바탕으로 음악을 생성합니다.")
     @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CustomResponse<Map<String, Object>>> generateMusic(
             @RequestParam("sessionId") String sessionId,
@@ -66,6 +69,7 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
+    @Operation(summary = "음악 재생성하기", description = "응답한 결과가 마음에 들지 않는경우 요약을 바탕으로 음악을 다시 생성합니다.")
     @PostMapping(value = "/regenerate/from-summary", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CustomResponse<MusicRegenerateResponse>> regenerateFromSummary(
             @RequestBody MusicRegenerateRequest request) {
@@ -79,6 +83,7 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
+    @Operation(summary = "모션음악 재생성하기", description = "모션음악을 재생성합니다.")
     @PostMapping("/{baseId}/motion/regenerate")
     public ResponseEntity<CustomResponse<MotionMusicRegenerateResponse>> regenerateMotionMusic(
             @PathVariable Integer baseId) {
