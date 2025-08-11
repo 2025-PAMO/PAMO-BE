@@ -9,6 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ExploreResponseDTO {
+    String profileImageUrl;
     List<MotionMusicTitleAndArtist> mostStreamed;
     List<MotionMusicTitleAndArtist> mostLoved;
     List<MotionMusicTitleAndArtist> newReleases;

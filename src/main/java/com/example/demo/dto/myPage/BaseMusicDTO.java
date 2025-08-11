@@ -16,4 +16,5 @@ public class BaseMusicDTO {
     private String artist;
     private String musicFileUrl;
     private boolean isBookmarked;
+    private boolean deletable;
 }

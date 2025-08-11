@@ -1,4 +1,4 @@
-package com.example.demo.dto.myPage;
+package com.example.demo.dto.music;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TitleUpdateRequestDTO {
-    private String title;
+public class VisibilityUpdateRequestDTO {
+    private Boolean visibility;
 }

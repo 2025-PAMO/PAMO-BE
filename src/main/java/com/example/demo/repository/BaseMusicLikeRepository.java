@@ -20,4 +20,8 @@ public interface BaseMusicLikeRepository extends JpaRepository<BaseMusicLike, In
             @Param("userId") Integer userId
     );
 
+    boolean existsByUserIdAndBaseMusicId(Integer userId, Integer baseMusicId);
+
+    void deleteByUserIdAndBaseMusicId(Integer userId, Integer baseMusicId);
+
 }

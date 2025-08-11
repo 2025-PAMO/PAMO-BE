@@ -1,0 +1,48 @@
+package com.example.demo.controller;
+
+import com.example.demo.apiPayload.CustomResponse;
+import com.example.demo.dto.music.TitleUpdateRequestDTO;
+import com.example.demo.service.BaseMusicService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import static com.example.demo.util.SecurityUtil.getCurrentUserId;
+
+@RestController
+@RequestMapping("/api/base-music")
+@RequiredArgsConstructor
+public class BaseMusicController {
+    private final BaseMusicService baseMusicService;
+
+    @PatchMapping("/{id}/title")
+    public CustomResponse<String> updateBaseMusicTitle(
+            @PathVariable("id") Integer musicId,
+            @RequestBody TitleUpdateRequestDTO requestDTO
+    ){
+        Integer userId = getCurrentUserId();
+        baseMusicService.updateBaseMusicTitle(userId, musicId, requestDTO.getTitle());
+        return CustomResponse.onSuccess("기본 음악 제목이 성공적으로 수정되었습니다.");
+    }
+
+    @DeleteMapping("{id}")
+    public CustomResponse<String> deleteBaseMusic(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        baseMusicService.deleteBaseMusic(userId, musicId);
+        return CustomResponse.onSuccess("기본 음악이 성공적으로 삭제되었습니다.");
+    }
+
+    @PutMapping("/{id}/bookmark")
+    public CustomResponse<String> bookmark(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        baseMusicService.bookmark(userId, musicId);
+        return CustomResponse.onSuccess("기본 음악을 북마크에 추가했습니다.");
+    }
+
+    @DeleteMapping("/{id}/bookmark")
+    public CustomResponse<String> unbookmark(@PathVariable("id") Integer musicId) {
+        Integer userId = getCurrentUserId();
+        baseMusicService.unbookmark(userId, musicId);
+        return CustomResponse.onSuccess("기본 음악 북마크가 해제되었습니다.");
+    }
+
+}
