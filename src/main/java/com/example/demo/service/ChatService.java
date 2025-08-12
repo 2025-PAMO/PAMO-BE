@@ -73,7 +73,6 @@ public class ChatService {
             User dummy = new User();
             dummy.setNickname("테스트유저");
             dummy.setProfileImage(null);
-            dummy.setJoinType("test");
             userRepository.save(dummy);
         }
     }
