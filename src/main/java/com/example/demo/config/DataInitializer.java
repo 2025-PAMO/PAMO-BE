@@ -4,6 +4,8 @@ import com.example.demo.domain.*;
 import com.example.demo.oauth.entity.ProviderType;
 import com.example.demo.oauth.entity.RoleType;
 import com.example.demo.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -22,8 +24,10 @@ public class DataInitializer implements CommandLineRunner {
     private final BaseMusicRepository baseMusicRepository;
     private final BaseMusicLikeRepository baseMusicLikeRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager; // ✅ Native SQL 실행용
 
     @Override
+    @Transactional
     public void run(String... args) throws InterruptedException {
         // 1. 사용자 생성
         User user1 = newUser("alice_kakao_id", "Alice", "https://example.com/alice.png", "KAKAO");
@@ -78,9 +82,20 @@ public class DataInitializer implements CommandLineRunner {
         BaseMusicLike baseLike2 = newBaseMusicLike(user2, base2, "base_like2");
         baseMusicLikeRepository.saveAll(List.of(baseLike1, baseLike2));
 
+        // 7. ✅ music_summary 데이터 삽입
+        entityManager.createNativeQuery("""
+            INSERT INTO music_summary (session_id, base_music_id, created_at, summary_text) VALUES
+            ('session_001', NULL, CURRENT_TIMESTAMP, '밝고 경쾌한 피아노 리프와 리드미컬한 드럼 비트가 어우러진 곡으로, 활기차고 긍정적인 분위기를 전달합니다.'),
+            ('session_002', NULL, CURRENT_TIMESTAMP, '부드러운 어쿠스틱 기타와 잔잔한 스트링이 조화를 이루어 따뜻하고 차분한 감성을 자아냅니다.'),
+            ('session_003', NULL, CURRENT_TIMESTAMP, '전자 신스 사운드와 묵직한 베이스라인이 결합된 곡으로, 신비롭고 미래지향적인 분위기를 연출합니다.'),
+            ('session_004', NULL, CURRENT_TIMESTAMP, '서정적인 피아노 선율과 웅장한 오케스트라 사운드가 어우러져 영화의 한 장면 같은 감동을 줍니다.'),
+            ('session_005', NULL, CURRENT_TIMESTAMP, '경쾌한 기타 리프와 강렬한 드럼이 중심이 된 록 스타일 곡으로, 에너지가 넘치고 역동적인 느낌을 줍니다.');
+        """).executeUpdate();
+
         System.out.println("✅ 예시 데이터 생성 완료");
     }
 
+    // --- Helper methods ---
     private User newUser(String userId, String nickname, String profileImage, String joinType) {
         User user = new User();
         user.setUserId(userId);

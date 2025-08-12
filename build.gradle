@@ -18,34 +18,41 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.apache.commons:commons-text:1.10.0'
-	runtimeOnly 'com.h2database:h2'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+	implementation 'org.springframework.boot:spring-boot-starter-web'        // MVC
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'    // WebClient
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.projectlombok:lombok'
+	implementation 'org.apache.commons:commons-text:1.10.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+
+	// AWS SDK v2 (Presigner)
+	implementation platform('software.amazon.awssdk:bom:2.25.48')
+	implementation 'software.amazon.awssdk:s3'
+
+	// (선택) 기존 v1 AmazonS3를 계속 쓸 경우에만 유지
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.636'
-	annotationProcessor 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	// build.gradle
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
-	//로그인
+
+	// OAuth/JWT
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
+	// DB
+	runtimeOnly 'com.h2database:h2'             // 로컬
+	runtimeOnly 'com.mysql:mysql-connector-j'   // 운영
 
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 
+	// Dev/Test
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
 
 tasks.named('test') {
 	useJUnitPlatform()

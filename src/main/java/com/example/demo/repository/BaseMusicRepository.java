@@ -11,5 +11,6 @@ public interface BaseMusicRepository extends JpaRepository<BaseMusic, Integer> {
 
     long countByUserId(Integer userId);
     List<BaseMusic> findByUser(User user);
-    Optional<BaseMusic> findBySessionId(String sessionId);
+    Optional<BaseMusic> findBySessionIdAndIsDeletedFalse(String sessionId);
+    Optional<BaseMusic> findByIdAndIsDeletedFalse(Integer id);
 }

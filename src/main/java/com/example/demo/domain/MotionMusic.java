@@ -27,12 +27,10 @@ public class MotionMusic {
     @JoinColumn(name = "base_music_id", nullable = false)
     private BaseMusic baseMusic;
 
-    @Column(name = "base_title")
-    private String baseTitle;
-
     @Column(name = "session_id", length = 64)
     private String sessionId;
 
+    // 모션 음악 개별 제목(선택)
     private String title;
 
     @Column(name = "file_url")
@@ -41,13 +39,14 @@ public class MotionMusic {
     @Column(name = "ani_url")
     private String aniUrl;
 
-    private Integer count;
+    @Column(name = "count", nullable = false)
+    private Integer count = 0;
 
-    private Boolean visibility;
+    @Column(name = "visibility", nullable = false)
+    private Boolean visibility = true;
 
     @OneToMany(mappedBy = "motionMusic", cascade = CascadeType.ALL)
     private List<MotionMusicLike> likes;
-
 
     @Column(name = "created_at", insertable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Timestamp createdAt;

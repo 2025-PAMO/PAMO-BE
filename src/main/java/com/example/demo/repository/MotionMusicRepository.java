@@ -5,8 +5,6 @@ import com.example.demo.domain.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
 import java.util.List;
 
 public interface MotionMusicRepository extends JpaRepository<MotionMusic, Integer> {
@@ -30,4 +28,7 @@ public interface MotionMusicRepository extends JpaRepository<MotionMusic, Intege
     List<MotionMusic> findByUser(User user);
 
     List<MotionMusic> findByBaseMusicId(Integer baseMusicId);
+
+    long countByUserId(Integer userId); // 🔹 기본 제목용 카운트
+
 }
