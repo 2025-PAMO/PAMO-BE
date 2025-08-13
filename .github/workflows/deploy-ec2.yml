@@ -64,10 +64,11 @@ jobs:
       - name: Deploy on EC2 (pull & restart container)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: 3.37.130.238
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+
           envs: IMAGE_NAME,IMAGE_TAG_SHA,IMAGE_TAG_LATEST,CONTAINER_NAME,APP_PORT,GHCR_USERNAME,GHCR_TOKEN
           script: |
             set -e
