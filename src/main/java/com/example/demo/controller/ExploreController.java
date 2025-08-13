@@ -3,10 +3,14 @@ package com.example.demo.controller;
 import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.dto.explore.ExploreResponseDTO;
-import com.example.demo.dto.explore.MusicDebugDTO;
+import com.example.demo.oauth.entity.UserPrincipal;
 import com.example.demo.repository.MotionMusicRepository;
 import com.example.demo.service.ExploreService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Tag(name = "홈화면 API", description = "홈화면에 보여질 내용을 조회합니다.")
 @RestController
 @RequestMapping("/explore")
 @RequiredArgsConstructor
@@ -23,30 +28,17 @@ public class ExploreController {
     private final ExploreService exploreService;
     private final MotionMusicRepository motionMusicRepository;
 
+    @Operation(summary = "홈화면/둘러보기 조회 API")
     @GetMapping
-    public CustomResponse<ExploreResponseDTO> showExplore(@RequestParam(required = false) Integer id) {
-        if (id != null) {
-            return CustomResponse.onSuccess(exploreService.getExplorePage(id));
+    public CustomResponse<ExploreResponseDTO> showExplore() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof UserPrincipal userPrincipal) {
+            return CustomResponse.onSuccess(exploreService.getExplorePage(userPrincipal.getId()));
         } else {
             return CustomResponse.onSuccess(exploreService.getExplorePage());
         }
     }
-
-    // Explore 테스트용 컨트롤러
-    @GetMapping("/dev/music-order")
-    public List<MusicDebugDTO> debugMusicOrder() {
-        return motionMusicRepository.findAll().stream()
-                .filter(MotionMusic::getVisibility) // 공개된 음악만
-                .sorted(Comparator.comparing(MotionMusic::getCreatedAt).reversed())
-                .map(music -> new MusicDebugDTO(
-                        music.getId(),
-                        music.getTitle(),
-                        music.getUser().getNickname(),
-                        music.getCover(),
-                        music.getCreatedAt()
-                ))
-                .collect(Collectors.toList());
-    }
-
 
 }

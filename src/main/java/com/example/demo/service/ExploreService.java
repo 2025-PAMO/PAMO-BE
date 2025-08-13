@@ -1,9 +1,11 @@
 package com.example.demo.service;
 
 import com.example.demo.domain.MotionMusic;
+import com.example.demo.domain.User;
 import com.example.demo.dto.explore.ExploreResponseDTO;
 import com.example.demo.repository.MotionMusicLikeRepository;
 import com.example.demo.repository.MotionMusicRepository;
+import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -15,11 +17,13 @@ import static com.example.demo.converter.ExploreConverter.convertToTitleAndArtis
 @RequiredArgsConstructor
 @Service
 public class ExploreService {
+    private final UserRepository userRepository;
     private final MotionMusicRepository motionMusicRepository;
     private final MotionMusicLikeRepository motionMusicLikeRepository;
 
     public ExploreResponseDTO getExplorePage(Integer id) {
         return ExploreResponseDTO.builder()
+                .profileImageUrl(getProfileImageUrl(id))
                 .mostStreamed(convertToTitleAndArtistList(getMostStreamedMotionMusic()))
                 .mostLoved(convertToTitleAndArtistList(getMostLovedMotionMusic()))
                 .newReleases(convertToTitleAndArtistList(getLatestMotionMusic()))
@@ -36,6 +40,12 @@ public class ExploreService {
                 .build();
     }
 
+    private String getProfileImageUrl(Integer userId) {
+        User user =  userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        return user.getProfileImage();
+    }
+
     private List<MotionMusic> getMostStreamedMotionMusic() {
         return motionMusicRepository.findByVisibilityTrueOrderByCountDesc(PageRequest.of(0, 30));
     }
@@ -50,7 +60,7 @@ public class ExploreService {
 
     // 사용자가 좋아요한 시점 기준 최신 3개
     private List<MotionMusic> getUserRecentlyLikedMusics(Integer userId) {
-        return motionMusicLikeRepository.findUserLikedVisibleMusicOrderByLikedAtDesc(
+        return motionMusicLikeRepository.findUserLikedVisibleOrOwnedPrivateOrderByLikedAtDesc(
                 userId,
                 PageRequest.of(0, 3)
         );

@@ -32,12 +32,13 @@ public class BaseMusic {
     @Column(name = "file_url")
     private String fileUrl;
 
+    @Column(name = "deletable")
+    private Boolean deletable;
+
     // 소프트 삭제
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
-    @Column(name = "deletable")
-    private Boolean deletable;
 
     @OneToMany(mappedBy = "baseMusic", cascade = CascadeType.ALL)
     private List<MotionMusic> motionMusics;

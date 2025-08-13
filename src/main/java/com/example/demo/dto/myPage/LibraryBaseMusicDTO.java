@@ -9,6 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class VisibilityUpdateRequestDTO {
-    private Boolean visibility;
+public class LibraryBaseMusicDTO {
+    private Integer baseMusicId;
+    private String title;
+    private String artist;
+    private String musicFileUrl;
+    private boolean isBookmarked;
 }

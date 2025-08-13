@@ -45,7 +45,7 @@ public class MotionMusic {
     @Column(name = "visibility", nullable = false)
     private Boolean visibility = true;
 
-    @OneToMany(mappedBy = "motionMusic", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "motionMusic", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MotionMusicLike> likes;
 
     @Column(name = "created_at", insertable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")

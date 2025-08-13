@@ -12,6 +12,8 @@ import com.example.demo.repository.BaseMusicRepository;
 import com.example.demo.repository.MusicSummaryRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.MusicService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+@Tag(name = "음악 API", description = "생성한 요약을 바탕으로 기본음악을 생성합니다.")
 @RestController
 @RequestMapping("/api/music")
 @RequiredArgsConstructor
@@ -33,7 +35,7 @@ public class MusicController {
     private final UserRepository userRepository;
     private final MusicService musicService;
 
-    /** 기본음악 생성: prompt는 받지 않음. file(허밍)은 선택. */
+    @Operation(summary = "음악 생성하기", description = "허밍데이터를 기반으로 한 데이터를 바탕으로 음악을 생성합니다.")
     @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CustomResponse<Map<String, Object>>> generateMusic(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
@@ -73,7 +75,7 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    /** 기본음악 재생성: sessionId의 요약으로 재생성 */
+    @Operation(summary = "음악 재생성하기", description = "응답한 결과가 마음에 들지 않는경우 요약을 바탕으로 음악을 다시 생성합니다.")
     @PostMapping(value = "/regenerate/from-summary", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CustomResponse<MusicRegenerateResponse>> regenerateFromSummary(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
@@ -87,8 +89,8 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    /** ✅ 기본음악 → 모션음악 생성 (쿼리 파라미터로 baseId 받기) */
-    @PostMapping("/motion/regenerate")
+    @Operation(summary = "모션음악 재생성하기", description = "모션음악을 재생성합니다.")
+    @PostMapping("/{baseId}/motion/regenerate")
     public ResponseEntity<CustomResponse<MotionMusicRegenerateResponse>> regenerateMotionMusic(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam Integer baseId) {
