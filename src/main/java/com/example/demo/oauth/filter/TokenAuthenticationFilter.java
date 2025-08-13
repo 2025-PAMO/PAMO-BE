@@ -30,6 +30,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String tokenStr = HeaderUtil.getAccessToken(request);
 
         log.info("요청 URI: {}", request.getRequestURI());
