@@ -16,7 +16,7 @@ jobs:
 
     env:
       IMAGE_REGISTRY: ghcr.io
-      IMAGE_NAME: ghcr.io/${{ github.repository }} # ghcr.io/<owner>/<repo>
+      IMAGE_NAME: ghcr.io/2025-pamo/pamo-be
       IMAGE_TAG_SHA: ${{ github.sha }}
       IMAGE_TAG_LATEST: latest
       CONTAINER_NAME: pamo-be
