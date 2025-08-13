@@ -35,6 +35,11 @@ public class BaseMusic {
     @Column(name = "deletable")
     private Boolean deletable;
 
+    // 소프트 삭제
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+
     @OneToMany(mappedBy = "baseMusic", cascade = CascadeType.ALL)
     private List<MotionMusic> motionMusics;
 
