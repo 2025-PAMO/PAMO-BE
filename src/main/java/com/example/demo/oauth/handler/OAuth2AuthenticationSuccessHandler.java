@@ -61,8 +61,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         CookieUtil.addCookie(response, "refresh_token", refreshToken.getToken(), (int) (refreshTokenExpiry / 60));
 
         // access token 응답 + 리다이렉트 (프론트로 token 쿼리 전달)
-        response.sendRedirect("/login/success?token=" + accessToken.getToken());
+        //response.sendRedirect("/login/success?token=" + accessToken.getToken());
 
+        response.sendRedirect("http://localhost:5173/login/success?token=" + accessToken.getToken());
         // 인증 요청 관련 쿠키 제거
         RefreshTokenCookieManager.clear(request, response);
     }
