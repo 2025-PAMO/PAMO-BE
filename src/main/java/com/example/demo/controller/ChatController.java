@@ -6,9 +6,11 @@ import com.example.demo.dto.chat.ChatRequestDTO;
 import com.example.demo.service.ChatService;
 import com.example.demo.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "채팅 API", description = "기본음악 생성 시 대화하며 음악 정보를 구체화합니다.")
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor

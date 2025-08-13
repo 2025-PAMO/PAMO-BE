@@ -41,9 +41,6 @@ public class User {
     @Column(name = "profile_image", length = 500)
     private String profileImage;
 
-    @Column(name = "join_type", length = 100)
-    private String joinType;
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<MotionMusic> motionMusics;
 

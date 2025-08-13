@@ -4,6 +4,8 @@ import com.example.demo.domain.*;
 import com.example.demo.oauth.entity.ProviderType;
 import com.example.demo.oauth.entity.RoleType;
 import com.example.demo.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -13,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-//// 테스트용 데이터 생성 코드
+//// Explore, my-music 테스트용 데이터 생성 코드
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -24,8 +26,10 @@ public class DataInitializer implements CommandLineRunner {
     private final BaseMusicRepository baseMusicRepository;
     private final BaseMusicLikeRepository baseMusicLikeRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager; // ✅ Native SQL 실행용
 
     @Override
+    @Transactional
     public void run(String... args) throws InterruptedException {
         // 이미 데이터가 있으면 스킵
         if (isAlreadySeeded()) {
@@ -41,9 +45,9 @@ public class DataInitializer implements CommandLineRunner {
         userRepository.flush();
 
         // 2. BaseMusic 생성 (MotionMusic에 필수)
-        BaseMusic base1 = newBaseMusic("Base Track A", "https://example.com/base_a.mp3", user1, "session_a", false);
-        BaseMusic base2 = newBaseMusic("Base Track B", "https://example.com/base_b.mp3", user1, "session_b", false);
-        BaseMusic base3 = newBaseMusic("Base Track C", "https://example.com/base_c.mp3", user2, "session_c", false);
+        BaseMusic base1 = newBaseMusic("Base Track A", "https://example.com/base_a.mp3", user1, "session_a");
+        BaseMusic base2 = newBaseMusic("Base Track B", "https://example.com/base_b.mp3", user1, "session_b");
+        BaseMusic base3 = newBaseMusic("Base Track C", "https://example.com/base_c.mp3", user2, "session_c");
         baseMusicRepository.saveAll(List.of(base1, base2, base3));
         baseMusicRepository.flush();
 
@@ -86,50 +90,15 @@ public class DataInitializer implements CommandLineRunner {
         BaseMusicLike baseLike2 = newBaseMusicLike(user2, base2, "base_like2");
         baseMusicLikeRepository.saveAll(List.of(baseLike1, baseLike2));
 
-        // 소셜 로그인한 사용자에게 연결할 더미데이터 생성
-        User dummyUser = new User();
-        dummyUser.setUserId("dummy_4");
-        dummyUser.setNickname("DummyUser4");
-        dummyUser.setEmail("dummy4@test.com");
-        dummyUser.setJoinType("KAKAO");
-        dummyUser.setProviderType(ProviderType.KAKAO);
-        dummyUser.setRoleType(RoleType.USER);
-        dummyUser.setEmailVerifiedYn("Y");
-        dummyUser.setCreatedAt(LocalDateTime.now());
-        dummyUser.setModifiedAt(LocalDateTime.now());
-        userRepository.save(dummyUser);
-
-        // 2. BaseMusic 더미 생성
-        BaseMusic base4 = newBaseMusic("Test Base 4-A", "https://example.com/4_base_a.mp3", dummyUser, "session_4_a", false);
-        BaseMusic base5 = newBaseMusic("Test Base 4-B", "https://example.com/4_base_b.mp3", dummyUser, "session_4_b", false);
-        baseMusicRepository.saveAll(List.of(base4, base5));
-        baseMusicRepository.flush();
-
-        // 3. MotionMusic 더미 생성
-        List<MotionMusic> motions = List.of(
-                newMotionMusic("User4 Track A", dummyUser, base4, 120, true, "https://example.com/cover_4_a.jpg", "session4_a"),
-                newMotionMusic("User4 Track B", dummyUser, base5, 95, true, "https://example.com/cover_4_b.jpg", "session4_b"),
-                newMotionMusic("User4 Track C", dummyUser, base4, 75, false, "https://example.com/cover_4_c.jpg", "session4_c")
-        );
-        motionMusicRepository.saveAll(motions);
-
-        // 4. MotionMusicLike 생성
-        List<MotionMusicLike> likes2 = List.of(
-                newMotionLike(dummyUser, musics.get(1), "session1"),
-                newMotionLike(dummyUser, musics.get(0), "session2"),
-                newMotionLike(dummyUser, musics.get(4), "session3")
-        );
-        motionMusicLikeRepository.saveAll(likes2);
-
-
-        // 6. BaseMusicLike 추가
-        BaseMusicLike baseLike3 = newBaseMusicLike(dummyUser, base1, "base_like3");
-        BaseMusicLike baseLike4 = newBaseMusicLike(dummyUser, base2, "base_like4");
-        BaseMusicLike baseLike5 = newBaseMusicLike(dummyUser, base4, "base_like5");
-        BaseMusicLike baseLike6 = newBaseMusicLike(dummyUser, base5, "base_like5");
-        baseMusicLikeRepository.saveAll(List.of(baseLike3, baseLike4, baseLike5, baseLike6));
-
-        System.out.println("✅ user_id=9999 테스트용 더미 음악 데이터 생성 완료");
+        // 7. ✅ music_summary 데이터 삽입
+        entityManager.createNativeQuery("""
+            INSERT INTO music_summary (session_id, base_music_id, created_at, summary_text) VALUES
+            ('session_001', NULL, CURRENT_TIMESTAMP, '밝고 경쾌한 피아노 리프와 리드미컬한 드럼 비트가 어우러진 곡으로, 활기차고 긍정적인 분위기를 전달합니다.'),
+            ('session_002', NULL, CURRENT_TIMESTAMP, '부드러운 어쿠스틱 기타와 잔잔한 스트링이 조화를 이루어 따뜻하고 차분한 감성을 자아냅니다.'),
+            ('session_003', NULL, CURRENT_TIMESTAMP, '전자 신스 사운드와 묵직한 베이스라인이 결합된 곡으로, 신비롭고 미래지향적인 분위기를 연출합니다.'),
+            ('session_004', NULL, CURRENT_TIMESTAMP, '서정적인 피아노 선율과 웅장한 오케스트라 사운드가 어우러져 영화의 한 장면 같은 감동을 줍니다.'),
+            ('session_005', NULL, CURRENT_TIMESTAMP, '경쾌한 기타 리프와 강렬한 드럼이 중심이 된 록 스타일 곡으로, 에너지가 넘치고 역동적인 느낌을 줍니다.');
+        """).executeUpdate();
 
         System.out.println("✅ 예시 데이터 생성 완료");
     }
@@ -140,7 +109,6 @@ public class DataInitializer implements CommandLineRunner {
                 || baseMusicRepository.count() > 0L
                 || motionMusicRepository.count() > 0L;
     }
-
 
     private User newUser(String userId, String nickname, String profileImage, String joinType) {
         User user = new User();
@@ -157,13 +125,12 @@ public class DataInitializer implements CommandLineRunner {
         return user;
     }
 
-    private BaseMusic newBaseMusic(String title, String url, User user, String sessionId, boolean deletable) {
+    private BaseMusic newBaseMusic(String title, String url, User user, String sessionId) {
         BaseMusic base = new BaseMusic();
         base.setTitle(title);
         base.setFileUrl(url);
         base.setUser(user);
         base.setSessionId(sessionId);
-        base.setDeletable(deletable);
         return base;
     }
 

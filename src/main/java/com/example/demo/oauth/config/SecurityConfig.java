@@ -45,7 +45,8 @@ public class SecurityConfig {
                         .frameOptions(frameOptions -> frameOptions.sameOrigin()) // ✅ iframe 허용
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/oauth2/**", "/auth/**","/login/**", "/", "/h2-console/**", "/explore").permitAll()
+                        .requestMatchers("/oauth2/**", "/auth/**","/login/**", "/", "/h2-console/**", "/explore","/v3/api-docs/**",
+                                "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .anyRequest().authenticated()
                 )

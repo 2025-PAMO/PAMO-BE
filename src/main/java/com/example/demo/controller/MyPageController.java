@@ -4,6 +4,8 @@ import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.dto.user.NicknameRequestDTO;
 import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.service.MyPageService;
+import com.example.demo.util.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -20,17 +22,19 @@ public class MyPageController {
     private final MyPageService myPageService;
     private final UserService userService;
 
+    @Operation(summary = "내가 생성한 음악 조회 API", description = "현재 대화데이터를 바탕으로 요약을 생성합니다.")
     @GetMapping("/musics")
     public CustomResponse<MyMusicResponseDTO> getMyMusic(
             @RequestParam String type
     ) {
-        Integer userId = getCurrentUserId();
-        MyMusicResponseDTO result = myPageService.getMyMusic(userId, type);
+        Integer id = SecurityUtil.getCurrentUserId();
+        MyMusicResponseDTO result = myPageService.getMyMusic(id, type);
         return CustomResponse.onSuccess(result);
     }
 
     @GetMapping("/library")
     public CustomResponse<MyMusicResponseDTO> getMyLibrary(
+            @RequestParam Integer id,
             @RequestParam String type
     ){
         Integer userId = getCurrentUserId();
