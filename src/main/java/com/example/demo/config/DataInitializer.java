@@ -107,7 +107,9 @@ public class DataInitializer implements CommandLineRunner {
         // 기준 테이블 하나만 봐도 충분. 더 엄격히 하고 싶으면 각 테이블 count를 함께 확인하세요.
         return userRepository.count() > 0L
                 || baseMusicRepository.count() > 0L
-                || motionMusicRepository.count() > 0L;
+                || motionMusicRepository.count() > 0L
+                || baseMusicLikeRepository.count() > 0L
+                || motionMusicLikeRepository.count() > 0L;
     }
 
     private User newUser(String userId, String nickname, String profileImage, String joinType) {
@@ -116,7 +118,6 @@ public class DataInitializer implements CommandLineRunner {
         user.setEmail(nickname.toLowerCase() + "@test.com");
         user.setNickname(nickname);
         user.setProfileImage(profileImage);
-        user.setJoinType(joinType);
         user.setProviderType(ProviderType.valueOf(joinType));
         user.setRoleType(RoleType.USER);
         user.setEmailVerifiedYn("Y");
