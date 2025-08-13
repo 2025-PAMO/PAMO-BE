@@ -54,6 +54,7 @@ jobs:
         with:
           context: .              # Dockerfile 위치가 다르면 수정
           push: true
+          platforms: linux/amd64
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG_SHA }}
             ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG_LATEST }}
