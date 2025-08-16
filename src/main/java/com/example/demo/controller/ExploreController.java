@@ -1,7 +1,6 @@
 package com.example.demo.controller;
 
 import com.example.demo.apiPayload.CustomResponse;
-import com.example.demo.domain.MotionMusic;
 import com.example.demo.dto.explore.ExploreResponseDTO;
 import com.example.demo.oauth.entity.UserPrincipal;
 import com.example.demo.repository.MotionMusicRepository;
@@ -13,12 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Tag(name = "홈화면 API", description = "홈화면에 보여질 내용을 조회합니다.")
 @RestController
