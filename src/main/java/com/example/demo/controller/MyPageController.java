@@ -4,7 +4,6 @@ import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.dto.user.NicknameRequestDTO;
 import com.example.demo.dto.myPage.MyMusicResponseDTO;
 import com.example.demo.service.MyPageService;
-import com.example.demo.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +26,13 @@ public class MyPageController {
     public CustomResponse<MyMusicResponseDTO> getMyMusic(
             @RequestParam String type
     ) {
-        Integer id = SecurityUtil.getCurrentUserId();
-        MyMusicResponseDTO result = myPageService.getMyMusic(id, type);
+        Integer userId = getCurrentUserId();
+        MyMusicResponseDTO result = myPageService.getMyMusic(userId, type);
         return CustomResponse.onSuccess(result);
     }
 
     @GetMapping("/library")
     public CustomResponse<MyMusicResponseDTO> getMyLibrary(
-            @RequestParam Integer id,
             @RequestParam String type
     ){
         Integer userId = getCurrentUserId();
