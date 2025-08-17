@@ -3,11 +3,13 @@ package com.example.demo.repository;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.User;
 import com.example.demo.repository.projection.MusicSearchProjection;
+import com.example.demo.repository.projection.RelatedItemView;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
+import java.util.Optional;
 
 public interface MotionMusicRepository extends JpaRepository<MotionMusic, Integer> {
 
@@ -33,7 +35,66 @@ public interface MotionMusicRepository extends JpaRepository<MotionMusic, Intege
 
     long countByUserId(Integer userId); // 🔹 기본 제목용 카운트
 
+    @Query("""
+      SELECT mm FROM MotionMusic mm
+        JOIN FETCH mm.user u
+        JOIN FETCH mm.baseMusic bm
+      WHERE mm.id = :id
+    """)
+    Optional<MotionMusic> findByIdWithOwnerAndBase(@Param("id") Integer id);
 
+    // 해당 BaseMusic으로 만든 공개 모션음악 작성자 프로필 이미지 3개 (중복 제거)
+    @Query("""
+      SELECT DISTINCT u.profileImage
+      FROM MotionMusic mm
+      JOIN mm.user u
+      WHERE mm.baseMusic.id = :baseId
+        AND mm.visibility = TRUE
+      ORDER BY mm.createdAt DESC
+    """)
+    List<String> findDistinctCreatorProfileImagesByBase(@Param("baseId") Integer baseId,
+                                                        Pageable pageable);
+
+
+    // related 1순위: 같은 base music의 다른 공개 모션음악 (현재 곡 제외)
+    @Query("""
+      SELECT 
+        mm.id          AS id,
+        mm.title       AS title,
+        u.nickname     AS artist,
+        mm.cover       AS coverImageUrl,
+        mm.count       AS viewCount
+      FROM MotionMusic mm
+      JOIN mm.user u
+      WHERE mm.id <> :currentId
+        AND mm.visibility = TRUE
+        AND mm.baseMusic.id = :baseId
+      ORDER BY mm.count DESC, mm.createdAt DESC
+    """)
+    List<RelatedItemView> findRelatedPrimary(
+            @Param("currentId") Integer currentId,
+            @Param("baseId") Integer baseId,
+            Pageable pageable);
+
+    // related 보충: 다른 base music의 공개 모션음악 (현재 곡 제외)
+    @Query("""
+      SELECT 
+        mm.id          AS id,
+        mm.title       AS title,
+        u.nickname     AS artist,
+        mm.cover       AS coverImageUrl,
+        mm.count       AS viewCount
+      FROM MotionMusic mm
+      JOIN mm.user u
+      WHERE mm.id <> :currentId
+        AND mm.visibility = TRUE
+        AND mm.baseMusic.id <> :baseId
+      ORDER BY mm.count DESC, mm.createdAt DESC
+    """)
+    List<RelatedItemView> findRelatedFallback(
+            @Param("currentId") Integer currentId,
+            @Param("baseId") Integer baseId,
+            Pageable pageable);
 
     @Query(value = """
         SELECT 

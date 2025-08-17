@@ -34,6 +34,17 @@ public class SecurityUtil {
         throw new RuntimeException("인증 주체가 올바르지 않습니다.");
     }
 
+    public static Integer getCurrentUserIdOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) return null;
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserPrincipal userPrincipal) {
+            return userPrincipal.getId();
+        }
+        return null;
+    }
+
     // 현재 사용자 권한 목록 (예: "ROLE_USER", "ROLE_ADMIN")
     public static String getCurrentUserRoles() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
