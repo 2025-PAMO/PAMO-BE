@@ -7,7 +7,6 @@ import com.example.demo.oauth.service.CustomOAuth2UserService;
 import com.example.demo.oauth.token.AuthTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -59,7 +58,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/oauth2/**", "/auth/**","/login/**", "/", "/h2-console/**", "/explore","/v3/api-docs/**",
-                                "/swagger-ui/**").permitAll()
+                                "/swagger-ui/**", "/api/motion-music/*/detail").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .anyRequest().authenticated()
                 )
