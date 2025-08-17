@@ -69,7 +69,6 @@ public class MusicService {
 
     /**
      * 프롬프트(=요약) + 선택적 허밍 → FastAPI → S3 업로드 → URL 반환
-     * 허밍 파일은 선택(null/empty 허용).
      */
     public String generateMusicAndUpload(String prompt, @Nullable MultipartFile hummingFile) throws IOException {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -104,14 +103,13 @@ public class MusicService {
 
     /**
      * 기존 기본음악 파일 + (sessionId의 최신 요약)으로 재생성 → 새 BaseMusic 저장
-     * - sessionId로 기존 BaseMusic(삭제되지 않은 것)을 찾아, 그 파일을 FastAPI에 보내 재생성
      */
     @Transactional
     public MusicRegenerateResponse regenerateFromSummaryText(String sessionId, Integer userId, String title) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
 
-        BaseMusic baseMusic = baseMusicRepo.findBySessionIdAndIsDeletedFalse(sessionId)
+        BaseMusic baseMusic = baseMusicRepo.findBySessionIdAndDeletableFalse(sessionId)
                 .orElseThrow(() -> new RuntimeException("삭제되지 않은 기본 음악을 찾을 수 없습니다."));
 
         String prompt = summaryRepo.findBySessionId(sessionId)
@@ -120,7 +118,7 @@ public class MusicService {
 
         // 기존 기본음악 오디오 가져오기
         String originalFileUrl = baseMusic.getFileUrl();
-        String key = originalFileUrl.substring(originalFileUrl.indexOf("music/")); // "music/xxx.wav"
+        String key = originalFileUrl.substring(originalFileUrl.indexOf("music/"));
 
         S3Object s3Object = amazonS3.getObject(bucketName, key);
         byte[] audioBytes;
@@ -130,7 +128,7 @@ public class MusicService {
             throw new RuntimeException("기존 음악 S3 다운로드 실패", e);
         }
 
-        // FastAPI에 기존 오디오 + prompt(=요약) 전달
+        // FastAPI에 기존 오디오 + prompt 전달
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("prompt", prompt);
         body.add("file", new ByteArrayResource(audioBytes) {
@@ -167,38 +165,31 @@ public class MusicService {
         music.setUser(user);
         music.setTitle(resolvedTitle);
         music.setFileUrl(fileUrl);
-        music.setIsDeleted(false);
+        music.setDeletable(false);
 
         baseMusicRepo.save(music);
 
         return new MusicRegenerateResponse(music.getId(), fileUrl, resolvedTitle);
     }
 
-    /**
-     * ✅ 기본음악 → 모션음악 생성 (오디오 생성 안 함)
-     * - BaseMusic 메타만 복사하여 MotionMusic 한 건 생성
-     * - count=0, visibility=false
-     * - title 미지정 시 "나의 모션음악 N"
-     */
+    /** 기본음악 → 모션음악 생성 */
     @Transactional
     public MotionMusicRegenerateResponse regenerateMotionMusic(Integer baseMusicId) {
-        BaseMusic baseMusic = baseMusicRepo.findByIdAndIsDeletedFalse(baseMusicId)
+        BaseMusic baseMusic = baseMusicRepo.findByIdAndDeletableFalse(baseMusicId)
                 .orElseThrow(() -> new RuntimeException("삭제되지 않은 기본 음악이 존재하지 않습니다."));
 
         User owner = baseMusic.getUser();
 
-        // 기본 제목 부여
         String motionTitle = generateDefaultMotionTitle(owner.getId());
 
-        // 새 모션 레코드 생성 (오디오 새 생성 X)
         MotionMusic motionMusic = new MotionMusic();
         motionMusic.setBaseMusic(baseMusic);
         motionMusic.setUser(owner);
         motionMusic.setSessionId(baseMusic.getSessionId());
         motionMusic.setTitle(motionTitle);
-        motionMusic.setFileUrl(baseMusic.getFileUrl()); // 기본음악 오디오 그대로 사용
-        motionMusic.setCount(0);                        // 조회수 0
-        motionMusic.setVisibility(false);               // 기본 비공개
+        motionMusic.setFileUrl(baseMusic.getFileUrl());
+        motionMusic.setCount(0);
+        motionMusic.setVisibility(false);
         motionMusicRepo.save(motionMusic);
 
         return new MotionMusicRegenerateResponse(

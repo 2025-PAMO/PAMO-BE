@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 @Tag(name = "음악 API", description = "생성한 요약을 바탕으로 기본음악을 생성합니다.")
 @RestController
 @RequestMapping("/api/music")
@@ -64,7 +65,7 @@ public class MusicController {
         music.setUser(user);
         music.setTitle(resolvedTitle);
         music.setFileUrl(fileUrl);
-        music.setIsDeleted(false);
+        music.setDeletable(false);
         baseMusicRepo.save(music);
 
         Map<String, Object> response = new HashMap<>();
@@ -99,7 +100,7 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    /** 프론트 업로드 영상 key를 모션음악에 부착 + 썸네일 생성 (기존 유지) */
+    /** 프론트 업로드 영상 key를 모션음악에 부착 + 썸네일 생성 */
     @PostMapping("/motion/attach")
     public ResponseEntity<CustomResponse<Void>> attachMotionAssets(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
