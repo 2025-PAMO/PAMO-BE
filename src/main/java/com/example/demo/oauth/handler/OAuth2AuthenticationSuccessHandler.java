@@ -57,14 +57,18 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             existingToken.setRefreshToken(refreshToken.getToken());
         }
 
-        // 쿠키에 refresh token 저장
-        CookieUtil.addCookie(response, "refresh_token", refreshToken.getToken(), (int) (refreshTokenExpiry / 60));
+        String frontendRedirectUrl;
+        if ("localhost".equals(request.getServerName())) {
+            // 로컬 환경
+            frontendRedirectUrl = "http://localhost:5173/login/success";
+        } else {
+            // EC2 환경
+            frontendRedirectUrl = "http://3.37.130.238:5173/login/success";
+        }
 
-        // access token 응답 + 리다이렉트 (프론트로 token 쿼리 전달)
-        //response.sendRedirect("/login/success?token=" + accessToken.getToken());
+        String targetUrl = frontendRedirectUrl + "?token=" + accessToken.getToken();
+        response.sendRedirect(targetUrl);
 
-        response.sendRedirect("http://localhost:5173/login/success?token=" + accessToken.getToken());
         // 인증 요청 관련 쿠키 제거
-        RefreshTokenCookieManager.clear(request, response);
-    }
+        RefreshTokenCookieManager.clear(request, response);}
 }
