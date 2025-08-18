@@ -57,14 +57,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             existingToken.setRefreshToken(refreshToken.getToken());
         }
 
-        String frontendRedirectUrl;
-        if ("localhost".equals(request.getServerName())) {
-            // 로컬 환경
-            frontendRedirectUrl = "http://localhost:5173/login/success";
-        } else {
-            // EC2 환경
-            frontendRedirectUrl = "http://3.37.130.238:5173/login/success";
-        }
+        String frontendRedirectUrl = "http://localhost:5173/login/success";
 
         String targetUrl = frontendRedirectUrl + "?token=" + accessToken.getToken();
         response.sendRedirect(targetUrl);
