@@ -47,11 +47,11 @@ public class ExploreService {
     }
 
     private List<MotionMusic> getMostStreamedMotionMusic() {
-        return motionMusicRepository.findByVisibilityTrueOrderByCountDesc(PageRequest.of(0, 30));
+        return motionMusicRepository.findByVisibilityTrueOrderByCountDesc(PageRequest.of(0, 8));
     }
 
     private List<MotionMusic> getMostLovedMotionMusic() {
-        return motionMusicRepository.findMostLikedVisibleMotionMusic(PageRequest.of(0, 50));
+        return motionMusicRepository.findMostLikedVisibleMotionMusic(PageRequest.of(0, 8));
     }
 
     private List<MotionMusic> getLatestMotionMusic() {
