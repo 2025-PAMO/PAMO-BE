@@ -13,4 +13,5 @@ import lombok.NoArgsConstructor;
 public class ChatAnswerResponseDTO {
     private String message;
     private ChatStatus status;
+    private String sessionId;
 }

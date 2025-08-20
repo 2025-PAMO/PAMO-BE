@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.apiPayload.CustomResponse;
 import com.example.demo.dto.music.MusicGenerateRequest;
 import com.example.demo.dto.summary.SummaryDTO;
 import com.example.demo.dto.summary.SummaryRequest;
@@ -9,17 +10,14 @@ import com.example.demo.repository.MusicSummaryRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Tag(name = "홈화면 API", description = "홈화면에 보여질 내용을 조회합니다.")
 @RestController
-@RequestMapping("/summary")
+@RequestMapping("/api/summary")
 public class SummaryController {
 
     private final MusicSummaryRepository summaryRepo;
@@ -43,18 +41,15 @@ public class SummaryController {
         return ResponseEntity.ok("요약 저장 완료");
     }
 
-    @Operation(summary = "요약 조회 API", description = "생성한 요약정보를 조회 할 수 있습니다.")
-    @PostMapping("/music/generate")
-    public ResponseEntity<?> generate(@RequestBody MusicGenerateRequest request) {
-        MusicSummary entity = summaryRepo.findBySessionId(request.getSessionId())
+    @Operation(summary = "요약 조회 API", description = "sessionId 기반으로 생성한 요약정보를 조회합니다.")
+    @GetMapping("{sessionId}")
+    public CustomResponse<SummaryDTO> getSummary(@PathVariable String sessionId) {
+        MusicSummary entity = summaryRepo.findBySessionId(sessionId)
                 .orElseThrow(() -> new RuntimeException("요약 없음"));
 
         SummaryDTO dto = SummaryConverter.toDTO(entity);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("summaryText", dto.getSummaryText());
-        response.put("sessionId", dto.getSessionId());
-
-        return ResponseEntity.ok(response);
+        return CustomResponse.onSuccess(dto);
     }
+
 }
