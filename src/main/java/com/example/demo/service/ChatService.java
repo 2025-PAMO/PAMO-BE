@@ -53,7 +53,7 @@ public class ChatService {
                 );
             }
 
-            // ✅ GPT에게 요약 요청 (extractSummary 제거)
+
             List<Message> messages = new ArrayList<>();
             messages.add(new Message("system", buildSystemPrompt(status)));
             messages.addAll(chatLog);

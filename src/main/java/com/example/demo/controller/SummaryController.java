@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@Tag(name = "홈화면 API", description = "홈화면에 보여질 내용을 조회합니다.")
+@Tag(name = "요약 API", description = "대화 기반 음악 요약 생성 및 조회 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/summary")
 public class SummaryController {

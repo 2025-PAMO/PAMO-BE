@@ -34,7 +34,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-
+        // OAuth2 로그인 관련 요청은 JWT 검증 생략하도록 변경함 -> 추후 다시 삭제할 수도 있음
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/login/oauth2") || uri.startsWith("/oauth2/authorization")) {
+            log.debug("[JWT 인증 필터] 예외 처리된 URI: {}", uri);
+            filterChain.doFilter(request, response);
+            return;
+        }
+        //여기까지 추가함 추후 삭제할 수도 잇음
         String tokenStr = HeaderUtil.getAccessToken(request);
 
         log.info("요청 URI: {}", request.getRequestURI());
