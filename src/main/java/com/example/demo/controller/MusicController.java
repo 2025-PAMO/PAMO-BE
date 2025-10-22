@@ -6,7 +6,6 @@ import com.example.demo.domain.MusicSummary;
 import com.example.demo.domain.User;
 import com.example.demo.dto.music.MusicRegenerateRequest;
 import com.example.demo.dto.music.MusicRegenerateResponse;
-import com.example.demo.dto.music.MotionMusicRegenerateResponse;
 import com.example.demo.oauth.entity.UserPrincipal;
 import com.example.demo.repository.BaseMusicRepository;
 import com.example.demo.repository.MusicSummaryRepository;
@@ -25,7 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-@Tag(name = "음악 API", description = "생성한 요약을 바탕으로 기본음악을 생성합니다.")
+@Tag(name = "음악 API", description = "기본음악 및 모션음악 업로드 관련 API")
 @RestController
 @RequestMapping("/api/music")
 @RequiredArgsConstructor
@@ -36,7 +35,7 @@ public class MusicController {
     private final UserRepository userRepository;
     private final MusicService musicService;
 
-    @Operation(summary = "음악 생성하기", description = "허밍데이터를 기반으로 한 데이터를 바탕으로 음악을 생성합니다.")
+    @Operation(summary = "기본 음악 생성", description = "허밍데이터와 요약 텍스트를 기반으로 기본음악을 생성합니다.")
     @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CustomResponse<Map<String, Object>>> generateMusic(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
@@ -46,7 +45,6 @@ public class MusicController {
     ) throws IOException {
 
         Integer userId = userPrincipal.getId();
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
@@ -76,7 +74,7 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    @Operation(summary = "음악 재생성하기", description = "응답한 결과가 마음에 들지 않는경우 요약을 바탕으로 음악을 다시 생성합니다.")
+    @Operation(summary = "음악 재생성", description = "요약 텍스트를 바탕으로 기본음악을 재생성합니다.")
     @PostMapping(value = "/regenerate/from-summary", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CustomResponse<MusicRegenerateResponse>> regenerateFromSummary(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
@@ -90,25 +88,21 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    @Operation(summary = "모션음악 재생성하기", description = "모션음악을 재생성합니다.")
-    @PostMapping("/{baseId}/motion/regenerate")
-    public ResponseEntity<CustomResponse<MotionMusicRegenerateResponse>> regenerateMotionMusic(
+    @Operation(summary = "모션 비디오 업로드", description = "프론트에서 촬영된 모션영상(mp4)을 업로드하고 BaseMusic과 연결합니다.")
+    @PostMapping(value = "/{baseId}/motion/video", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CustomResponse<Map<String, Object>>> uploadMotionVideo(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam Integer baseId) {
+            @PathVariable Integer baseId,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) String title
+    ) throws IOException {
 
-        MotionMusicRegenerateResponse response = musicService.regenerateMotionMusic(baseId);
-        return ResponseEntity.ok(CustomResponse.onSuccess(response));
-    }
-
-    /** 프론트 업로드 영상 key를 모션음악에 부착 + 썸네일 생성 */
-    @PostMapping("/motion/attach")
-    public ResponseEntity<CustomResponse<Void>> attachMotionAssets(
-            @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam Integer motionMusicId,
-            @RequestParam String inputKey,
-            @RequestParam(required = false) Double timestampSec
-    ) {
-        musicService.attachMotionVideoAndCover(motionMusicId, inputKey, timestampSec);
-        return ResponseEntity.ok(CustomResponse.onSuccess(null));
+        Map<String, Object> result = musicService.uploadMotionVideo(
+                userPrincipal.getId(),
+                baseId,
+                file,
+                title
+        );
+        return ResponseEntity.ok(CustomResponse.onSuccess(result));
     }
 }
