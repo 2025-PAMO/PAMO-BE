@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.apiPayload.code.GeneralErrorCode;
+import com.example.demo.apiPayload.exception.CustomException;
 import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.User;
@@ -41,7 +43,7 @@ public class MyPageService {
                     baseMusicRepository.findByUser(user).stream()
                             .map(b -> toMyMusicBaseMusicDTO(b, userId))
                             .collect(Collectors.toList()));
-            default -> throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
+            default -> throw new CustomException(GeneralErrorCode.INVALID_TYPE);
         };
     }
 
@@ -59,13 +61,13 @@ public class MyPageService {
                     baseMusicLikeRepository.findAllUserLikedBaseMusicOrderByLikedAtAsc(userId).stream()
                             .map(b -> toLibraryBaseMusicDTO(b, userId))
                             .collect(Collectors.toList()));
-            default -> throw new IllegalArgumentException("잘못된 type 값입니다. (motion | base)");
+            default -> throw new CustomException(GeneralErrorCode.INVALID_TYPE);
         };
     }
 
     public User getUserOrThrow(Integer userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(GeneralErrorCode.USER_NOT_FOUND));
     }
 
     private MyMusicResponseDTO buildMyMusicResponse(UserProfileDTO user, String type, List<?> musicList) {

@@ -2,13 +2,15 @@ package com.example.demo.domain;
 
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.servlet.http.PushBuilder;
+import lombok.*;
 
 import java.sql.Timestamp;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "music_summary")
 public class MusicSummary {
@@ -26,5 +28,4 @@ public class MusicSummary {
     @OneToOne
     @JoinColumn(name = "base_music_id", insertable = false, updatable = false)
     private BaseMusic baseMusic;
-
 }

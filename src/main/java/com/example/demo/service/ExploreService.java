@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.apiPayload.code.GeneralErrorCode;
+import com.example.demo.apiPayload.exception.CustomException;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.User;
 import com.example.demo.dto.explore.ExploreResponseDTO;
@@ -42,16 +44,16 @@ public class ExploreService {
 
     private String getProfileImageUrl(Integer userId) {
         User user =  userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(GeneralErrorCode.USER_NOT_FOUND));
         return user.getProfileImage();
     }
 
     private List<MotionMusic> getMostStreamedMotionMusic() {
-        return motionMusicRepository.findByVisibilityTrueOrderByCountDesc(PageRequest.of(0, 30));
+        return motionMusicRepository.findByVisibilityTrueOrderByCountDesc(PageRequest.of(0, 8));
     }
 
     private List<MotionMusic> getMostLovedMotionMusic() {
-        return motionMusicRepository.findMostLikedVisibleMotionMusic(PageRequest.of(0, 50));
+        return motionMusicRepository.findMostLikedVisibleMotionMusic(PageRequest.of(0, 8));
     }
 
     private List<MotionMusic> getLatestMotionMusic() {
