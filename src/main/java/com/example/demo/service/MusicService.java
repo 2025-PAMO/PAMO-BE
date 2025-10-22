@@ -10,12 +10,12 @@ import com.example.demo.domain.BaseMusic;
 import com.example.demo.domain.MotionMusic;
 import com.example.demo.domain.MusicSummary;
 import com.example.demo.domain.User;
-import com.example.demo.dto.music.MotionMusicRegenerateResponse;
 import com.example.demo.dto.music.MusicDetailResponseDTO;
 import com.example.demo.dto.music.MusicRegenerateResponse;
 import com.example.demo.dto.user.UserProfileDTO;
 import com.example.demo.repository.*;
 import com.example.demo.repository.projection.RelatedItemView;
+import com.example.demo.util.S3Uploader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -45,12 +45,10 @@ public class MusicService {
     private final BaseMusicRepository baseMusicRepo;
     private final MotionMusicRepository motionMusicRepo;
     private final MusicSummaryRepository summaryRepo;
-    private final MotionMusicRepository motionMusicRepository;
     private final MotionMusicLikeRepository motionMusicLikeRepository;
     private final BaseMusicLikeRepository baseMusicLikeRepository;
-
-    /** 외부 썸네일 생성기 (동영상 → 썸네일) */
     private final MotionCoverClient motionClient;
+    private final S3Uploader s3Uploader;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucketName;
@@ -58,27 +56,11 @@ public class MusicService {
     @Value("${app.s3.thumbs-prefix}")
     private String thumbsPrefix;
 
-    /** FastAPI: 기본음악 생성/재생성에만 사용 */
     @Value("${fastapi.endpoint.generate}")
     private String fastApiUrl;
 
-    /** "나의 노래 N" 기본 제목 생성 */
-    private String generateDefaultTitle(Integer userId) {
-        long count = baseMusicRepo.countByUserId(userId);
-        return "나의 노래 " + (count + 1);
-    }
 
-    /** "나의 모션음악 N" 기본 제목 생성 */
-    private String generateDefaultMotionTitle(Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        long count = motionMusicRepo.findByUser(user).size();
-        return "나의 모션음악 " + (count + 1);
-    }
-
-    /**
-     * 프롬프트(=요약) + 선택적 허밍 → FastAPI → S3 업로드 → URL 반환
-     */
+    // ✅ 기본 음악 생성 (FastAPI 호출)
     public String generateMusicAndUpload(String prompt, @Nullable MultipartFile hummingFile) throws IOException {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("prompt", prompt);
@@ -110,9 +92,8 @@ public class MusicService {
         return amazonS3.getUrl(bucketName, key).toString();
     }
 
-    /**
-     * 기존 기본음악 파일 + (sessionId의 최신 요약)으로 재생성 → 새 BaseMusic 저장
-     */
+
+    // ✅ 기본 음악 재생성
     @Transactional
     public MusicRegenerateResponse regenerateFromSummaryText(String sessionId, Integer userId, String title) {
         User user = userRepository.findById(userId)
@@ -125,7 +106,6 @@ public class MusicService {
                 .map(MusicSummary::getSummaryText)
                 .orElseThrow(() -> new RuntimeException("GPT 요약 없음"));
 
-        // 기존 기본음악 오디오 가져오기
         String originalFileUrl = baseMusic.getFileUrl();
         String key = originalFileUrl.substring(originalFileUrl.indexOf("music/"));
 
@@ -137,11 +117,13 @@ public class MusicService {
             throw new RuntimeException("기존 음악 S3 다운로드 실패", e);
         }
 
-        // FastAPI에 기존 오디오 + prompt 전달
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("prompt", prompt);
         body.add("file", new ByteArrayResource(audioBytes) {
-            @Override public String getFilename() { return "input.wav"; }
+            @Override
+            public String getFilename() {
+                return "input.wav";
+            }
         });
 
         HttpHeaders headers = new HttpHeaders();
@@ -152,7 +134,6 @@ public class MusicService {
             throw new RuntimeException("FastAPI 응답 실패");
         }
 
-        // 새 오디오 S3 업로드
         byte[] newAudio = response.getBody();
         String newKey = "music/" + UUID.randomUUID() + ".wav";
 
@@ -167,7 +148,9 @@ public class MusicService {
         }
 
         String fileUrl = amazonS3.getUrl(bucketName, newKey).toString();
-        String resolvedTitle = (title == null || title.trim().isEmpty()) ? generateDefaultTitle(userId) : title;
+        String resolvedTitle = (title == null || title.trim().isEmpty())
+                ? "나의 노래 " + (baseMusicRepo.countByUserId(userId) + 1)
+                : title;
 
         BaseMusic music = new BaseMusic();
         music.setSessionId(sessionId);
@@ -175,65 +158,46 @@ public class MusicService {
         music.setTitle(resolvedTitle);
         music.setFileUrl(fileUrl);
         music.setDeletable(false);
-
         baseMusicRepo.save(music);
 
         return new MusicRegenerateResponse(music.getId(), fileUrl, resolvedTitle);
     }
 
-    /** 기본음악 → 모션음악 생성 */
+
+    // ✅ 모션 비디오 업로드 (durationSec 제거)
     @Transactional
-    public MotionMusicRegenerateResponse regenerateMotionMusic(Integer baseMusicId) {
-        BaseMusic baseMusic = baseMusicRepo.findByIdAndDeletableFalse(baseMusicId)
-                .orElseThrow(() -> new RuntimeException("삭제되지 않은 기본 음악이 존재하지 않습니다."));
+    public Map<String, Object> uploadMotionVideo(Integer userId, Integer baseId, MultipartFile file, String title) throws IOException {
 
-        User owner = baseMusic.getUser();
+        BaseMusic baseMusic = baseMusicRepo.findByIdAndDeletableFalse(baseId)
+                .orElseThrow(() -> new RuntimeException("기본 음악을 찾을 수 없습니다."));
 
-        String motionTitle = generateDefaultMotionTitle(owner.getId());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        String videoUrl = s3Uploader.upload(file, "motion-video");
 
         MotionMusic motionMusic = new MotionMusic();
+        motionMusic.setUser(user);
         motionMusic.setBaseMusic(baseMusic);
-        motionMusic.setUser(owner);
-        motionMusic.setSessionId(baseMusic.getSessionId());
-        motionMusic.setTitle(motionTitle);
+        motionMusic.setTitle(title != null ? title : "나의 모션뮤직비디오");
+        motionMusic.setAniUrl(videoUrl);
         motionMusic.setFileUrl(baseMusic.getFileUrl());
-        motionMusic.setCount(0);
         motionMusic.setVisibility(false);
         motionMusicRepo.save(motionMusic);
 
-        return new MotionMusicRegenerateResponse(
-                motionMusic.getId(),
-                motionMusic.getFileUrl(),
-                baseMusic.getTitle(),
-                motionTitle
-        );
+        Map<String, Object> result = new HashMap<>();
+        result.put("motionMusicId", motionMusic.getId());
+        result.put("fileUrl", videoUrl);
+        result.put("baseTitle", baseMusic.getTitle());
+        result.put("motionTitle", motionMusic.getTitle());
+
+        return result;
     }
 
-    /** 프론트 업로드 영상 key를 모션음악에 부착 + 썸네일 생성 */
-    @Transactional
-    public void attachMotionVideoAndCover(Integer motionMusicId, String inputKey, Double timestampSec) {
-        MotionMusic mm = motionMusicRepo.findById(motionMusicId)
-                .orElseThrow(() -> new RuntimeException("MotionMusic not found: " + motionMusicId));
-
-        Map<String, Object> res = motionClient.generateThumbnailFromS3(
-                bucketName, inputKey, timestampSec, bucketName, thumbsPrefix
-        );
-        String thumbUrl = (String) res.get("thumbnail_url");
-        if (thumbUrl == null || thumbUrl.isBlank()) {
-            throw new RuntimeException("썸네일 URL이 비어 있습니다.");
-        }
-
-        String videoUrl = amazonS3.getUrl(bucketName, inputKey).toString();
-        mm.setAniUrl(videoUrl);
-        mm.setCover(thumbUrl);
-
-        motionMusicRepo.save(mm);
-    }
-
-    // 음악 상세 페이지
+    // ✅ 음악 상세 조회 (MotionMusicController에서 호출)
     @Transactional
     public MusicDetailResponseDTO getDetail(Integer musicId, String context, Integer viewerIdOrNull) {
-        MotionMusic motionMusic = motionMusicRepository.findByIdWithOwnerAndBase(musicId)
+        MotionMusic motionMusic = motionMusicRepo.findByIdWithOwnerAndBase(musicId)
                 .orElseThrow(() -> new CustomException(MusicErrorCode.MUSIC_NOT_FOUND));
         motionMusic.setCount(motionMusic.getCount() + 1);
 
@@ -245,7 +209,6 @@ public class MusicService {
             throw new CustomException(MusicErrorCode.NO_PERMISSION);
         }
 
-        // 좋아요/북마크 (로그인 안 했으면 false)
         boolean isLiked = viewerIdOrNull != null
                 && motionMusicLikeRepository.existsByUserIdAndMotionMusicId(viewerIdOrNull, motionMusic.getId());
 
@@ -283,7 +246,6 @@ public class MusicService {
                 .build();
 
         if ("mypage".equals(context)) {
-            // 로그인 필수: 전체 프로필 제공
             User viewer = userRepository.findById(viewerIdOrNull)
                     .orElseThrow(() -> new CustomException(GeneralErrorCode.INVALID_TOKEN));
             dto.setViewerProfile(UserProfileDTO.builder()
@@ -294,15 +256,13 @@ public class MusicService {
                     .profileImage(viewer.getProfileImage())
                     .build());
         } else if ("explore".equals(context) && viewerIdOrNull != null) {
-            // 로그인 상태면 이미지 한 장만
             userRepository.findById(viewerIdOrNull)
                     .map(User::getProfileImage)
                     .ifPresent(dto::setViewerProfileImage);
         }
 
         if ("explore".equals(context)) {
-            // creatorsUsingBase: 공개 트랙 작성자 프로필 3개
-            List<String> profiles = motionMusicRepository.findDistinctCreatorProfileImagesByBase(
+            List<String> profiles = motionMusicRepo.findDistinctCreatorProfileImagesByBase(
                     baseMusic.getId(), PageRequest.of(0, CREATORS_LIMIT));
             dto.setCreatorsUsingBase(
                     MusicDetailResponseDTO.CreatorsUsingBase.builder()
@@ -310,7 +270,6 @@ public class MusicService {
                             .build()
             );
 
-            // related 6개: 로그인 여부와 무관하게 공개곡 기준으로 선별
             List<MusicDetailResponseDTO.RelatedLite> related = buildRelatedForExplore(motionMusic.getId(), baseMusic.getId());
             dto.setRelated(related);
         }
@@ -319,8 +278,7 @@ public class MusicService {
     }
 
     private List<MusicDetailResponseDTO.RelatedLite> buildRelatedForExplore(Integer motionId, Integer baseId) {
-        // 1순위: 같은 baseMusic
-        var primaryViews = motionMusicRepository.findRelatedPrimary(motionId, baseId, PageRequest.of(0, RELATED_LIMIT));
+        var primaryViews = motionMusicRepo.findRelatedPrimary(motionId, baseId, PageRequest.of(0, RELATED_LIMIT));
         List<MusicDetailResponseDTO.RelatedLite> related = new ArrayList<>(RELATED_LIMIT);
         Set<Integer> seen = new HashSet<>();
 
@@ -329,11 +287,10 @@ public class MusicService {
             if (related.size() == RELATED_LIMIT) return related;
         }
 
-        // 2순위: 다른 baseMusic 보충
         int remain = RELATED_LIMIT - related.size();
         if (remain > 0) {
-            var fallbackViews = motionMusicRepository.findRelatedFallback(motionId, baseId, PageRequest.of(0, remain * 2));
-            for (var v : fallbackViews) { // 혹시 모를 중복 대비 여유분 가져와서 채움
+            var fallbackViews = motionMusicRepo.findRelatedFallback(motionId, baseId, PageRequest.of(0, remain * 2));
+            for (var v : fallbackViews) {
                 if (seen.add(v.getId())) related.add(map(v));
                 if (related.size() == RELATED_LIMIT) break;
             }
