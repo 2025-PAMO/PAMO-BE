@@ -22,7 +22,7 @@ public class ExploreController {
     private final ExploreService exploreService;
     private final MotionMusicRepository motionMusicRepository;
 
-    @Operation(summary = "둘러보기 조회 API", description = "비로그인 사용자는 좋아요한 음악 목록이 표시되지 않습니다.")
+    @Operation(summary = "둘러보기 조회 API", description = "비로그인 사용자는 좋아요한 음악 목록이 표시되지 않습니다.", security = {})
     @GetMapping
     public CustomResponse<ExploreResponseDTO> showExplore() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

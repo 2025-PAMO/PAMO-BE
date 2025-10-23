@@ -58,7 +58,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/oauth2/**", "/auth/**","/login/**", "/", "/h2-console/**", "/explore","/v3/api-docs/**",
-                                "/swagger-ui/**", "/api/motion-music/*/detail").permitAll()
+                                "/swagger-ui/**","/swagger-ui.html", "/api/motion-music/*/detail", "/api/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .anyRequest().authenticated()
                 )
