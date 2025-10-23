@@ -67,7 +67,7 @@ public class MotionMusicController {
         return CustomResponse.onSuccess("모션 음악을 성공적으로 좋아요 목록에서 삭제했습니다.");
     }
 
-    @Operation(summary = "모션 음악 상세 조회", description = "컨텍스트(explore|mypage)에 따라 상세 정보를 조회합니다.")
+    @Operation(summary = "모션 음악 상세 조회", description = "컨텍스트(explore|mypage)에 따라 상세 정보를 조회합니다.", security = {})
     @GetMapping("/{id}/detail")
     public CustomResponse<MusicDetailResponseDTO> getMusicDetail(
             @PathVariable Integer id,

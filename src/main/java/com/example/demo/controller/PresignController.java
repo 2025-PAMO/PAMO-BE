@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.service.MotionCoverClient;           // ✅ 꼭 필요
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -13,6 +15,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
+@Tag(name = "썸네일 생성 API", description = "모션 영상 썸네일을 생성합니다.")
 @RestController
 @RequestMapping("/api")
 public class PresignController {
@@ -29,6 +32,11 @@ public class PresignController {
         this.motionClient = motionClient;
     }
 
+    @Operation(
+            summary = "S3 업로드용 Presigned URL 발급",
+            description = "S3에 모션 영상을 업로드하기 위한 임시 서명 URL을 생성합니다. "
+                    + "URL은 5분간 유효하며, mp4 파일 업로드에 사용됩니다."
+    )
     @GetMapping("/presign/put-video")
     public Map<String, Object> presignPut(@RequestParam(required = false) String filename) {
         String key = (uploadsPrefix + (filename != null ? filename : (UUID.randomUUID() + ".mp4")))
@@ -49,6 +57,11 @@ public class PresignController {
         );
     }
 
+    @Operation(
+            summary = "S3 영상으로부터 썸네일 생성",
+            description = "S3에 업로드된 모션 영상에서 지정된 시점(timestampSec)의 썸네일을 생성합니다. "
+                    + "썸네일은 지정된 thumbsPrefix 경로에 저장됩니다."
+    )
     @PostMapping(path = "/thumbnail/from-s3", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, Object> makeThumbFromS3(@RequestBody MakeThumbReq req) {
         String inBucket = (req.inBucket != null) ? req.inBucket : bucket;
