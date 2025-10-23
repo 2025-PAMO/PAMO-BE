@@ -23,6 +23,7 @@ public class SearchController {
     @Operation(
             summary = "검색 결과 조회",
             description = "검색어와 타입, 정렬 방식을 지정해 기본/모션 음악을 검색하고 결과를 반환합니다."
+            ,security = {}
     )
     @GetMapping
     public CustomResponse<SearchResponse> search(
