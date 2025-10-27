@@ -57,7 +57,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             existingToken.setRefreshToken(refreshToken.getToken());
         }
 
-        String frontendRedirectUrl = "http://localhost:5173/login/success";
+        String frontendRedirectUrl = "https://pamo-fe.vercel.app/login/success";
 
         String targetUrl = frontendRedirectUrl + "?token=" + accessToken.getToken();
         response.sendRedirect(targetUrl);
