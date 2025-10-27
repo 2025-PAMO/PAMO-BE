@@ -57,7 +57,7 @@ public class MusicService {
     private String thumbsPrefix;
 
     @Value("${fastapi.endpoint.generate}")
-    private String fastApiUrl;
+    private String fastApiUrl; // 예: http://<host>:8000/generate-music
 
 
     // ✅ 기본 음악 생성 (FastAPI 호출)
@@ -164,9 +164,24 @@ public class MusicService {
     }
 
 
-    // ✅ 모션 비디오 업로드 (durationSec 제거)
+    /**
+     * ✅ 모션 비디오 업로드 + 모션 음악 생성
+     * - 프론트에서 조작(effects)을 prompt로 전달받아 FastAPI에 재생성 요청
+     * - BaseMusic의 WAV를 S3에서 내려받아 file=base.wav 로 전송
+     * - FastAPI 반환 바이트를 S3(motion-music/)에 업로드 후 그 URL을 motionMusic.fileUrl 로 저장
+     *
+     * @param userId 사용자 ID
+     * @param baseId 기반이 되는 BaseMusic ID
+     * @param file   모션 비디오 (mp4 등) — S3에 업로드되어 aniUrl 로 저장
+     * @param title  모션 뮤직 제목
+     * @param effects 프론트에서 조작한 효과(속도/피치/이펙트 등)를 문자열로 전달 (없으면 기본값)
+     */
     @Transactional
-    public Map<String, Object> uploadMotionVideo(Integer userId, Integer baseId, MultipartFile file, String title) throws IOException {
+    public Map<String, Object> uploadMotionVideo(Integer userId,
+                                                 Integer baseId,
+                                                 MultipartFile file,
+                                                 String title,
+                                                 @Nullable String effects) throws IOException {
 
         BaseMusic baseMusic = baseMusicRepo.findByIdAndDeletableFalse(baseId)
                 .orElseThrow(() -> new RuntimeException("기본 음악을 찾을 수 없습니다."));
@@ -174,23 +189,68 @@ public class MusicService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
+        // 1) 비디오 업로드 (aniUrl)
         String videoUrl = s3Uploader.upload(file, "motion-video");
 
+        // 2) BaseMusic의 WAV 바이트 가져오기
+        String originalFileUrl = baseMusic.getFileUrl();
+        String key = originalFileUrl.substring(originalFileUrl.indexOf("music/"));
+        S3Object s3Object = amazonS3.getObject(bucketName, key);
+        byte[] baseAudioBytes;
+        try (InputStream inputStream = s3Object.getObjectContent()) {
+            baseAudioBytes = inputStream.readAllBytes();
+        }
+
+        // 3) FastAPI 호출: prompt=effects, file=base.wav (기존 generate-music 재활용)
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("prompt", (effects == null || effects.isBlank()) ? "motion" : effects);
+        body.add("file", new ByteArrayResource(baseAudioBytes) {
+            @Override
+            public String getFilename() {
+                return "base.wav";
+            }
+        });
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<byte[]> response = restTemplate.exchange(fastApiUrl, HttpMethod.POST, request, byte[].class);
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new RuntimeException("FastAPI 모션 음악 생성 실패");
+        }
+
+        // 4) 모션용 새 오디오를 S3에 업로드
+        byte[] motionAudio = response.getBody();
+        String newKey = "motion-music/" + UUID.randomUUID() + ".wav";
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(motionAudio.length);
+        metadata.setContentType("audio/wav");
+
+        try (InputStream stream = new ByteArrayInputStream(motionAudio)) {
+            amazonS3.putObject(bucketName, newKey, stream, metadata);
+        }
+
+        String motionAudioUrl = amazonS3.getUrl(bucketName, newKey).toString();
+
+        // 5) MotionMusic 저장 (fileUrl = 새 오디오, aniUrl = 업로드한 비디오)
         MotionMusic motionMusic = new MotionMusic();
         motionMusic.setUser(user);
         motionMusic.setBaseMusic(baseMusic);
         motionMusic.setTitle(title != null ? title : "나의 모션뮤직비디오");
         motionMusic.setAniUrl(videoUrl);
-        motionMusic.setFileUrl(baseMusic.getFileUrl());
+        motionMusic.setFileUrl(motionAudioUrl);
         motionMusic.setVisibility(false);
         motionMusicRepo.save(motionMusic);
 
         Map<String, Object> result = new HashMap<>();
         result.put("motionMusicId", motionMusic.getId());
+        // 기존 응답 키 호환 유지: fileUrl = 비디오, 추가로 audioUrl 포함
         result.put("fileUrl", videoUrl);
+        result.put("audioUrl", motionAudioUrl);
         result.put("baseTitle", baseMusic.getTitle());
         result.put("motionTitle", motionMusic.getTitle());
-
         return result;
     }
 
