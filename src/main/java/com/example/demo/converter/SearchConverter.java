@@ -2,7 +2,7 @@ package com.example.demo.converter;
 
 import com.example.demo.dto.search.SearchDtos.SearchItem;
 import com.example.demo.dto.search.SearchDtos.SearchResponse;
-import com.example.demo.repository.projection.MusicSearchProjection;
+import com.example.demo.domain.MotionMusic;
 
 import java.util.List;
 import java.util.Objects;
@@ -12,38 +12,33 @@ public final class SearchConverter {
 
     private SearchConverter() {}
 
-    public static SearchItem toItem(MusicSearchProjection p, String kind) {
-        if (p == null) return null;
+    public static SearchItem toItem(MotionMusic m) {
+        if (m == null) return null;
+
         return SearchItem.builder()
-                .id(p.getId())
-                .title(p.getTitle())
-                .coverUrl(p.getCover())
-                .likeCount(p.getLikeCount())
-                .playCount(p.getPlayCount()) // BaseMusic이면 null
-                .kind(kind)
+                .id(m.getId())
+                .title(m.getTitle())
+                .coverUrl(m.getCover())
+                .playCount(m.getCount())
+                .nickname(m.getUser() != null ? m.getUser().getNickname() : null) // ✅ user 정보 일부만
                 .build();
     }
 
-    public static List<SearchItem> toItems(List<MusicSearchProjection> list, String kind) {
-        if (list == null) return List.of();
+    public static List<SearchItem> toItems(List<MotionMusic> list) {
+        if (list == null || list.isEmpty()) return List.of();
         return list.stream()
-                .map(p -> toItem(p, kind))
                 .filter(Objects::nonNull)
+                .map(SearchConverter::toItem)
                 .collect(Collectors.toList());
     }
 
-    public static SearchResponse buildResponse(String query, String type,
-                                               List<SearchItem> basicItems,
-                                               List<SearchItem> motionItems) {
-        boolean wantBasic = "all".equalsIgnoreCase(type) || "basic".equalsIgnoreCase(type);
-        boolean wantMotion = "all".equalsIgnoreCase(type) || "motion".equalsIgnoreCase(type);
-
+    public static SearchResponse buildResponse(String query, List<MotionMusic> motionMusics) {
+        List<SearchItem> items = toItems(motionMusics);
         return SearchResponse.builder()
                 .query(query)
-                .basic(wantBasic ? basicItems : null)
-                .motion(wantMotion ? motionItems : null)
-                .totalBasic(wantBasic && basicItems != null ? basicItems.size() : null)
-                .totalMotion(wantMotion && motionItems != null ? motionItems.size() : null)
+                .motion(items)
+                .totalMotion(items.size())
                 .build();
     }
 }
+
