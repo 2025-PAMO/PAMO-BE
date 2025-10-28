@@ -35,10 +35,7 @@ public class MusicController {
     private final UserRepository userRepository;
     private final MusicService musicService;
 
-    /**
-     * ✅ 기본 음악 생성
-     * 허밍데이터와 요약 텍스트를 기반으로 기본음악을 생성합니다.
-     */
+    // ✅ 기본 음악 생성
     @Operation(summary = "기본 음악 생성", description = "허밍데이터와 요약 텍스트를 기반으로 기본음악을 생성합니다.")
     @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CustomResponse<Map<String, Object>>> generateMusic(
@@ -72,16 +69,12 @@ public class MusicController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("musicId", music.getId());
-        response.put("summary", summaryText);
         response.put("fileUrl", music.getFileUrl());
 
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    /**
-     * ✅ 기본 음악 재생성
-     * GPT 요약 텍스트를 바탕으로 새로운 기본음악을 생성합니다.
-     */
+    // ✅ 기본 음악 재생성
     @Operation(summary = "음악 재생성", description = "요약 텍스트를 바탕으로 기본음악을 재생성합니다.")
     @PostMapping(value = "/regenerate/from-summary", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CustomResponse<MusicRegenerateResponse>> regenerateFromSummary(
@@ -96,27 +89,40 @@ public class MusicController {
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
 
-    /**
-     * ✅ 모션 비디오 업로드 및 모션음악 생성
-     * 프론트에서 촬영된 모션 영상(mp4)을 업로드하고,
-     * BaseMusic을 기반으로 FastAPI에 전달하여 모션용 음악을 생성합니다.
-     */
-    @Operation(summary = "모션 비디오 업로드", description = "프론트에서 촬영된 모션영상(mp4)을 업로드하고 BaseMusic과 연결합니다. (FastAPI 호출 포함)")
+    // ✅ 모션 비디오 업로드
+    @Operation(summary = "모션 비디오 업로드", description = "프론트에서 생성한 모션 영상(mp4)을 업로드하고 BaseMusic과 연결합니다.")
     @PostMapping(value = "/{baseId}/motion/video", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CustomResponse<Map<String, Object>>> uploadMotionVideo(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Integer baseId,
             @RequestPart("file") MultipartFile file,
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String effects // 🆕 추가됨
+            @RequestParam(required = false) String title
     ) throws IOException {
 
         Map<String, Object> result = musicService.uploadMotionVideo(
                 userPrincipal.getId(),
                 baseId,
                 file,
-                title,
-                effects // ✅ 새 파라미터 전달
+                title
+        );
+        return ResponseEntity.ok(CustomResponse.onSuccess(result));
+    }
+
+    // ✅ (신규) 모션 오디오 업로드
+    @Operation(summary = "모션 오디오 업로드", description = "프론트에서 수정한 오디오 파일을 업로드하고 MotionMusic으로 등록합니다.")
+    @PostMapping(value = "/{baseId}/motion/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CustomResponse<Map<String, Object>>> uploadMotionAudio(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Integer baseId,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) String title
+    ) throws IOException {
+
+        Map<String, Object> result = musicService.uploadMotionAudio(
+                userPrincipal.getId(),
+                baseId,
+                file,
+                title
         );
         return ResponseEntity.ok(CustomResponse.onSuccess(result));
     }
