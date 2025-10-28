@@ -70,6 +70,7 @@ public class MusicController {
         Map<String, Object> response = new HashMap<>();
         response.put("musicId", music.getId());
         response.put("fileUrl", music.getFileUrl());
+        response.put("summary", summaryText);
 
         return ResponseEntity.ok(CustomResponse.onSuccess(response));
     }
