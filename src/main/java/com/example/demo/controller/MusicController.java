@@ -62,15 +62,15 @@ public class MusicController {
         String lowerSummary = summaryText.toLowerCase(); // 대소문자 구분 방지
 
         if (lowerSummary.contains("해변") || lowerSummary.contains("트로피컬")) {
-            fileUrl = "s3://pamo-music-bucket/music/901beach.mp3";
+            fileUrl = "https://pamo-music-bucket.s3.ap-northeast-2.amazonaws.com/music/901beach.mp3";
         } else if (lowerSummary.contains("레게") || lowerSummary.contains("여유")) {
-            fileUrl = "s3://pamo-music-bucket/music/902raggae.mp3";
+            fileUrl = "https://pamo-music-bucket.s3.ap-northeast-2.amazonaws.com/music/902raggae.mp3";
         } else if (lowerSummary.contains("강렬") || lowerSummary.contains("운동")) {
-            fileUrl = "s3://pamo-music-bucket/music/903drum.mp3";
+            fileUrl = "https://pamo-music-bucket.s3.ap-northeast-2.amazonaws.com/music/903drum.mp3";
         } else if (lowerSummary.contains("신디사이저") || lowerSummary.contains("파티")) {
-            fileUrl = "s3://pamo-music-bucket/music/904syn.mp3";
+            fileUrl = "https://pamo-music-bucket.s3.ap-northeast-2.amazonaws.com/music/904syn.mp3";
         } else if (lowerSummary.contains("신스패드") || lowerSummary.contains("신스팝")) {
-            fileUrl = "s3://pamo-music-bucket/music/905edm.mp3";
+            fileUrl = "https://pamo-music-bucket.s3.ap-northeast-2.amazonaws.com/music/905edm.mp3";
         } else {
             // ✅ 기본 생성 로직
             fileUrl = musicService.generateMusicAndUpload(summaryText, file);
