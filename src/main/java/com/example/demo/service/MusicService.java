@@ -2,8 +2,8 @@ package com.example.demo.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.example.demo.apiPayload.code.GeneralErrorCode;
 import com.example.demo.apiPayload.code.MusicErrorCode;
 import com.example.demo.apiPayload.exception.CustomException;
 import com.example.demo.domain.BaseMusic;
@@ -53,14 +53,10 @@ public class MusicService {
     @Value("${cloud.aws.s3.bucket}")
     private String bucketName;
 
-    @Value("${app.s3.thumbs-prefix}")
-    private String thumbsPrefix;
-
     @Value("${fastapi.endpoint.generate}")
-    private String fastApiUrl; // 예: http://<host>:8000/generate-music
+    private String fastApiUrl;
 
-
-    // ✅ 기본 음악 생성 (FastAPI 호출)
+    // ✅ 기본 음악 생성 (FastAPI 호출 후 S3 업로드)
     public String generateMusicAndUpload(String prompt, @Nullable MultipartFile hummingFile) throws IOException {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("prompt", prompt);
@@ -91,7 +87,6 @@ public class MusicService {
 
         return amazonS3.getUrl(bucketName, key).toString();
     }
-
 
     // ✅ 기본 음악 재생성
     @Transactional
@@ -163,98 +158,82 @@ public class MusicService {
         return new MusicRegenerateResponse(music.getId(), fileUrl, resolvedTitle);
     }
 
-
-    /**
-     * ✅ 모션 비디오 업로드 + 모션 음악 생성
-     * - 프론트에서 조작(effects)을 prompt로 전달받아 FastAPI에 재생성 요청
-     * - BaseMusic의 WAV를 S3에서 내려받아 file=base.wav 로 전송
-     * - FastAPI 반환 바이트를 S3(motion-music/)에 업로드 후 그 URL을 motionMusic.fileUrl 로 저장
-     *
-     * @param userId 사용자 ID
-     * @param baseId 기반이 되는 BaseMusic ID
-     * @param file   모션 비디오 (mp4 등) — S3에 업로드되어 aniUrl 로 저장
-     * @param title  모션 뮤직 제목
-     * @param effects 프론트에서 조작한 효과(속도/피치/이펙트 등)를 문자열로 전달 (없으면 기본값)
-     */
+    // ✅ 모션 비디오 업로드 (썸네일 생성 포함)
     @Transactional
-    public Map<String, Object> uploadMotionVideo(Integer userId,
-                                                 Integer baseId,
-                                                 MultipartFile file,
-                                                 String title,
-                                                 @Nullable String effects) throws IOException {
-
+    public Map<String, Object> uploadMotionVideo(Integer userId, Integer baseId, MultipartFile file, String title) throws IOException {
         BaseMusic baseMusic = baseMusicRepo.findByIdAndDeletableFalse(baseId)
                 .orElseThrow(() -> new RuntimeException("기본 음악을 찾을 수 없습니다."));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        // 1) 비디오 업로드 (aniUrl)
+        // 1️⃣ 비디오 업로드
         String videoUrl = s3Uploader.upload(file, "motion-video");
 
-        // 2) BaseMusic의 WAV 바이트 가져오기
-        String originalFileUrl = baseMusic.getFileUrl();
-        String key = originalFileUrl.substring(originalFileUrl.indexOf("music/"));
-        S3Object s3Object = amazonS3.getObject(bucketName, key);
-        byte[] baseAudioBytes;
-        try (InputStream inputStream = s3Object.getObjectContent()) {
-            baseAudioBytes = inputStream.readAllBytes();
-        }
+        // 2️⃣ 실제 S3 Key 추출 (URL → Key)
+        String fileKey = videoUrl.substring(videoUrl.indexOf("motion-video/"));
 
-        // 3) FastAPI 호출: prompt=effects, file=base.wav (기존 generate-music 재활용)
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("prompt", (effects == null || effects.isBlank()) ? "motion" : effects);
-        body.add("file", new ByteArrayResource(baseAudioBytes) {
-            @Override
-            public String getFilename() {
-                return "base.wav";
-            }
-        });
+        // 3️⃣ FastAPI 호출로 썸네일 생성
+        Map<String, Object> thumbResult = motionClient.generateThumbnailFromS3(
+                bucketName,
+                fileKey,       // ✅ 실제 S3 key 전달
+                1.5,           // 썸네일 추출 타임 (초)
+                bucketName,
+                "motion-thumbs"
+        );
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+        String coverUrl = thumbResult != null ? (String) thumbResult.get("thumbnail_url") : null;
 
-        ResponseEntity<byte[]> response = restTemplate.exchange(fastApiUrl, HttpMethod.POST, request, byte[].class);
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new RuntimeException("FastAPI 모션 음악 생성 실패");
-        }
-
-        // 4) 모션용 새 오디오를 S3에 업로드
-        byte[] motionAudio = response.getBody();
-        String newKey = "motion-music/" + UUID.randomUUID() + ".wav";
-
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(motionAudio.length);
-        metadata.setContentType("audio/wav");
-
-        try (InputStream stream = new ByteArrayInputStream(motionAudio)) {
-            amazonS3.putObject(bucketName, newKey, stream, metadata);
-        }
-
-        String motionAudioUrl = amazonS3.getUrl(bucketName, newKey).toString();
-
-        // 5) MotionMusic 저장 (fileUrl = 새 오디오, aniUrl = 업로드한 비디오)
+        // 4️⃣ MotionMusic DB 저장
         MotionMusic motionMusic = new MotionMusic();
         motionMusic.setUser(user);
         motionMusic.setBaseMusic(baseMusic);
         motionMusic.setTitle(title != null ? title : "나의 모션뮤직비디오");
         motionMusic.setAniUrl(videoUrl);
-        motionMusic.setFileUrl(motionAudioUrl);
+        motionMusic.setFileUrl(baseMusic.getFileUrl());
+        motionMusic.setCover(coverUrl);
         motionMusic.setVisibility(false);
         motionMusicRepo.save(motionMusic);
 
+        // 5️⃣ 응답 반환
         Map<String, Object> result = new HashMap<>();
         result.put("motionMusicId", motionMusic.getId());
-        // 기존 응답 키 호환 유지: fileUrl = 비디오, 추가로 audioUrl 포함
         result.put("fileUrl", videoUrl);
-        result.put("audioUrl", motionAudioUrl);
+        result.put("coverUrl", coverUrl);
         result.put("baseTitle", baseMusic.getTitle());
         result.put("motionTitle", motionMusic.getTitle());
         return result;
     }
 
-    // ✅ 음악 상세 조회 (MotionMusicController에서 호출)
+    // ✅ 수정된 오디오 업로드 (프론트에서 만든 오디오)
+    @Transactional
+    public Map<String, Object> uploadMotionAudio(Integer userId, Integer baseId, MultipartFile audioFile, String title) throws IOException {
+        BaseMusic baseMusic = baseMusicRepo.findByIdAndDeletableFalse(baseId)
+                .orElseThrow(() -> new RuntimeException("기본 음악을 찾을 수 없습니다."));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        String audioUrl = s3Uploader.upload(audioFile, "motion-music");
+
+        MotionMusic motionMusic = new MotionMusic();
+        motionMusic.setUser(user);
+        motionMusic.setBaseMusic(baseMusic);
+        motionMusic.setTitle(title != null ? title : "나의 모션음악");
+        motionMusic.setFileUrl(audioUrl);
+        motionMusic.setVisibility(false);
+        motionMusicRepo.save(motionMusic);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("motionMusicId", motionMusic.getId());
+        result.put("fileUrl", audioUrl);
+        result.put("baseTitle", baseMusic.getTitle());
+        result.put("motionTitle", motionMusic.getTitle());
+
+        return result;
+    }
+
+    // ✅ 음악 상세 조회
     @Transactional
     public MusicDetailResponseDTO getDetail(Integer musicId, String context, Integer viewerIdOrNull) {
         MotionMusic motionMusic = motionMusicRepo.findByIdWithOwnerAndBase(musicId)
@@ -299,63 +278,11 @@ public class MusicService {
                 .fileUrl(baseMusic.getFileUrl())
                 .build();
 
-        MusicDetailResponseDTO dto = MusicDetailResponseDTO.builder()
+        return MusicDetailResponseDTO.builder()
                 .music(musicLite)
                 .usedBaseMusic(baseLite)
                 .viewerState(viewerState)
                 .build();
-
-        if ("mypage".equals(context)) {
-            User viewer = userRepository.findById(viewerIdOrNull)
-                    .orElseThrow(() -> new CustomException(GeneralErrorCode.INVALID_TOKEN));
-            dto.setViewerProfile(UserProfileDTO.builder()
-                    .id(viewer.getId())
-                    .nickname(viewer.getNickname())
-                    .providerType(viewer.getProviderType())
-                    .email(viewer.getEmail())
-                    .profileImage(viewer.getProfileImage())
-                    .build());
-        } else if ("explore".equals(context) && viewerIdOrNull != null) {
-            userRepository.findById(viewerIdOrNull)
-                    .map(User::getProfileImage)
-                    .ifPresent(dto::setViewerProfileImage);
-        }
-
-        if ("explore".equals(context)) {
-            List<String> profiles = motionMusicRepo.findDistinctCreatorProfileImagesByBase(
-                    baseMusic.getId(), PageRequest.of(0, CREATORS_LIMIT));
-            dto.setCreatorsUsingBase(
-                    MusicDetailResponseDTO.CreatorsUsingBase.builder()
-                            .profileImages(profiles)
-                            .build()
-            );
-
-            List<MusicDetailResponseDTO.RelatedLite> related = buildRelatedForExplore(motionMusic.getId(), baseMusic.getId());
-            dto.setRelated(related);
-        }
-
-        return dto;
-    }
-
-    private List<MusicDetailResponseDTO.RelatedLite> buildRelatedForExplore(Integer motionId, Integer baseId) {
-        var primaryViews = motionMusicRepo.findRelatedPrimary(motionId, baseId, PageRequest.of(0, RELATED_LIMIT));
-        List<MusicDetailResponseDTO.RelatedLite> related = new ArrayList<>(RELATED_LIMIT);
-        Set<Integer> seen = new HashSet<>();
-
-        for (var v : primaryViews) {
-            if (seen.add(v.getId())) related.add(map(v));
-            if (related.size() == RELATED_LIMIT) return related;
-        }
-
-        int remain = RELATED_LIMIT - related.size();
-        if (remain > 0) {
-            var fallbackViews = motionMusicRepo.findRelatedFallback(motionId, baseId, PageRequest.of(0, remain * 2));
-            for (var v : fallbackViews) {
-                if (seen.add(v.getId())) related.add(map(v));
-                if (related.size() == RELATED_LIMIT) break;
-            }
-        }
-        return related;
     }
 
     private static MusicDetailResponseDTO.RelatedLite map(RelatedItemView v) {
