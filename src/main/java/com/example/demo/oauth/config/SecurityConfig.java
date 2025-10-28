@@ -98,6 +98,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration conf = new CorsConfiguration();
         conf.setAllowedOriginPatterns(Arrays.asList(
+                "https://pamo-fe.vercel.app",
                 "http://localhost:5173",
                 "https://localhost:3000",
                 "https://localhost:8000"
