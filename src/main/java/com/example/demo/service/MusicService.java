@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.example.demo.apiPayload.code.GeneralErrorCode;
 import com.example.demo.apiPayload.code.MusicErrorCode;
 import com.example.demo.apiPayload.exception.CustomException;
 import com.example.demo.domain.BaseMusic;
@@ -47,6 +48,7 @@ public class MusicService {
     private final MusicSummaryRepository summaryRepo;
     private final MotionMusicLikeRepository motionMusicLikeRepository;
     private final BaseMusicLikeRepository baseMusicLikeRepository;
+    private final MotionMusicRepository motionMusicRepository;
     private final MotionCoverClient motionClient;
     private final S3Uploader s3Uploader;
 
@@ -233,10 +235,10 @@ public class MusicService {
         return result;
     }
 
-    // ✅ 음악 상세 조회
+    // 음악 상세 페이지
     @Transactional
     public MusicDetailResponseDTO getDetail(Integer musicId, String context, Integer viewerIdOrNull) {
-        MotionMusic motionMusic = motionMusicRepo.findByIdWithOwnerAndBase(musicId)
+        MotionMusic motionMusic = motionMusicRepository.findByIdWithOwnerAndBase(musicId)
                 .orElseThrow(() -> new CustomException(MusicErrorCode.MUSIC_NOT_FOUND));
         motionMusic.setCount(motionMusic.getCount() + 1);
 
@@ -248,6 +250,7 @@ public class MusicService {
             throw new CustomException(MusicErrorCode.NO_PERMISSION);
         }
 
+        // 좋아요/북마크 (로그인 안 했으면 false)
         boolean isLiked = viewerIdOrNull != null
                 && motionMusicLikeRepository.existsByUserIdAndMotionMusicId(viewerIdOrNull, motionMusic.getId());
 
@@ -278,11 +281,69 @@ public class MusicService {
                 .fileUrl(baseMusic.getFileUrl())
                 .build();
 
-        return MusicDetailResponseDTO.builder()
+        MusicDetailResponseDTO dto = MusicDetailResponseDTO.builder()
                 .music(musicLite)
                 .usedBaseMusic(baseLite)
                 .viewerState(viewerState)
                 .build();
+
+        if ("mypage".equals(context)) {
+            // 로그인 필수: 전체 프로필 제공
+            User viewer = userRepository.findById(viewerIdOrNull)
+                    .orElseThrow(() -> new CustomException(GeneralErrorCode.INVALID_TOKEN));
+            dto.setViewerProfile(UserProfileDTO.builder()
+                    .id(viewer.getId())
+                    .nickname(viewer.getNickname())
+                    .providerType(viewer.getProviderType())
+                    .email(viewer.getEmail())
+                    .profileImage(viewer.getProfileImage())
+                    .build());
+        } else if ("explore".equals(context) && viewerIdOrNull != null) {
+            // 로그인 상태면 이미지 한 장만
+            userRepository.findById(viewerIdOrNull)
+                    .map(User::getProfileImage)
+                    .ifPresent(dto::setViewerProfileImage);
+        }
+
+        if ("explore".equals(context)) {
+            // creatorsUsingBase: 공개 트랙 작성자 프로필 3개
+            List<String> profiles = motionMusicRepository.findDistinctCreatorProfileImagesByBase(
+                    baseMusic.getId(), PageRequest.of(0, CREATORS_LIMIT));
+            dto.setCreatorsUsingBase(
+                    MusicDetailResponseDTO.CreatorsUsingBase.builder()
+                            .profileImages(profiles)
+                            .build()
+            );
+
+            // related 6개: 로그인 여부와 무관하게 공개곡 기준으로 선별
+            List<MusicDetailResponseDTO.RelatedLite> related = buildRelatedForExplore(motionMusic.getId(), baseMusic.getId());
+            dto.setRelated(related);
+        }
+
+        return dto;
+    }
+
+    private List<MusicDetailResponseDTO.RelatedLite> buildRelatedForExplore(Integer motionId, Integer baseId) {
+        // 1순위: 같은 baseMusic
+        var primaryViews = motionMusicRepository.findRelatedPrimary(motionId, baseId, PageRequest.of(0, RELATED_LIMIT));
+        List<MusicDetailResponseDTO.RelatedLite> related = new ArrayList<>(RELATED_LIMIT);
+        Set<Integer> seen = new HashSet<>();
+
+        for (var v : primaryViews) {
+            if (seen.add(v.getId())) related.add(map(v));
+            if (related.size() == RELATED_LIMIT) return related;
+        }
+
+        // 2순위: 다른 baseMusic 보충
+        int remain = RELATED_LIMIT - related.size();
+        if (remain > 0) {
+            var fallbackViews = motionMusicRepository.findRelatedFallback(motionId, baseId, PageRequest.of(0, remain * 2));
+            for (var v : fallbackViews) { // 혹시 모를 중복 대비 여유분 가져와서 채움
+                if (seen.add(v.getId())) related.add(map(v));
+                if (related.size() == RELATED_LIMIT) break;
+            }
+        }
+        return related;
     }
 
     private static MusicDetailResponseDTO.RelatedLite map(RelatedItemView v) {
