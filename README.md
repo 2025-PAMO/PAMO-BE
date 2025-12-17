@@ -1,5 +1,5 @@
 # PAMO BACKEND
-<img src="./image/pamo소개.png">
+<img src="./image/pamofirst.png">
 
 # 😀 백엔드 팀원 및 역할
 
@@ -41,17 +41,23 @@
 
 ## 음악 결과물 저장 및 공유
 <div style="display: flex; justify-content: space-between;">
-  <img src="./image/image 7.png" width="400px" alt=""/>
   <img src="./image/image 8.png" width="400px" alt=""/>
+  <img src="./image/image 9.png" width="400px" alt=""/>
 </div>
-<h3>사용자는 마이페이지에서 생성한 음악과 좋아요·북마크한 음악을 확인할 수 있으며, 기본 음악은 버튼으로 모션 음악을 확장할 수 있습니다.</h3>
-<h3>홈 화면에서 최신·인기·추천 등 다양한 카테고리 음악을 쉽게 탐색할 수 있습니다. 또한 검색과 필터링 기능을 통해 원하는 곡을 빠르게 찾아 들을 수 있습니다.</h3>
+<div style="display: flex; justify-content: space-between;">
+  <img src="./image/image 10.png" width="400px" alt=""/>
+  <img src="./image/image 11.png" width="400px" alt=""/>
+</div>
+<h3>사용자는 마이페이지에서 생성한 음악과 좋아요·북마크한 음악을 확인할 수 있습니다.</h3>
+<h3>기본 음악은 버튼을 눌러 모션 음악으로 확장할 수 있습니다.</h3>
+<h3>홈 화면에서 최신·인기·추천 등 다양한 카테고리 음악을 쉽게 탐색할 수 있습니다.</h3>
+<h3>홈또한 검색과 필터링 기능을 통해 원하는 곡을 빠르게 찾아 들을 수 있습니다.</h3>
 <hr>
 <br>
 
 # 📂 프로젝트 구성
 
-<img src="./image/개발구성도.png">
+<img src="./image/system.png">
 <img src="./image/erd.png">
 
 ## 디렉토리 구조
